@@ -11,12 +11,6 @@ import KernelAbstractions.synchronize as sync
 include(joinpath(SRC,"boot/include.jl"))
 sucess = superInc(["boot/needs/types"]; root=SRC)
 
-# create primitive structs
-info = Backend(
-    lib  = Dict(),
-    exec = Execution(), 
-)  
-
-# include .jl files
+# Load API modules
 lists = ["home/api"]
-@info join(superInc(lists; root=SRC, lib=info.lib),"\n")
+@info join(superInc(lists; root=SRC), "\n")
