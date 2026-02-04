@@ -11,6 +11,7 @@ import KernelAbstractions.synchronize as sync
 include(joinpath(SRC,"boot/include.jl"))
 sucess = superInc(["boot/needs"]; root=SRC)
 
+#=
 # create primitive structs
 info = Self(
     sys = Path(
@@ -21,7 +22,8 @@ info = Self(
     ui = UI(), 
     bckd = Execution(), 
     mpi = Distributed()
-)  
+) 
+    =# 
 
 # include
 include(joinpath(SRC,"boot/needs/utils.jl"))
