@@ -132,14 +132,13 @@ function device_wakeup!()
 end
 
 """
-    device_free(mesh::Mesh,::Val{:CPU})
+    device_free(mesh,::Val{:CPU})
 
 Description:
 ---
-Return Dicts of effective cpu and gpu backend based on hard-coded supported backends. 
+Free device memory and trigger garbage collection. 
 """
-function device_free!(mesh::Mesh,::Val{:CPU})
-    mesh = nothing
+function device_free!(mesh,::Val{:CPU})
     GC.gc()
     return nothing
 end

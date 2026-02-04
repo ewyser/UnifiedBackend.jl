@@ -7,7 +7,7 @@ const SRC = @__DIR__
 include(joinpath(SRC,"boot/boot.jl"))
 
 function __init__()
-    welcome_log() 
+    # welcome_log() 
 end
 
 end
