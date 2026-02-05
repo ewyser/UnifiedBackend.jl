@@ -69,8 +69,9 @@ if options[selected] == "yes"
     # Step 3d: git tag
     run(`git tag v$new_version`)
 
-    # Step 3e: push commit and tag
-    run(`git push origin main`)
+    # Step 3e: get current branch and push commit and tag
+    current_branch = strip(read(`git branch --show-current`, String))
+    run(`git push origin $current_branch`)
     run(`git push origin v$new_version`)
     #=    =#
 else
