@@ -17,7 +17,7 @@ and runtime configuration.
 
 # Main Components
 - `Backend`: Top-level configuration structure
-- `Execution`: CPU/GPU device registry
+- `ExecutionPlatforms`: Host/device execution platform registry
 - `add_backend!`: Initialize available execution platforms
 - `select_execution_backend`: Choose and configure devices
 
@@ -51,14 +51,13 @@ import KernelAbstractions.synchronize as sync
 include(joinpath(SRC, "boot/include.jl"))
 sucess = superInc(["boot/needs/types"]; root=SRC)
 
+# Include API modules at precompile time
+success = superInc(["home/api"]; root=SRC)
+
 # Define global backend
-const bckd = Backend(lib=Dict(), exec=Execution())
+const bckd = Backend(lib=Dict(), exec=ExecutionPlatforms())
 
 function __init__()
-    # Load API modules
-    lists   = ["home/api"]
-    success = superInc(lists; root=SRC, lib=bckd.lib)
-    
     # Initialize execution backend
     invokelatest(add_backend!, bckd.exec, Val(:x86_64))
     

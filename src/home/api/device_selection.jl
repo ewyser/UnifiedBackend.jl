@@ -1,58 +1,58 @@
 export get_host, get_device, select_execution_backend
 
 """
-    get_host(bckd::Execution; prompt::Bool=false, distributed::Bool=false)
+    get_host(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
 
 Description:
 ---
-Return a NamedTuple of effective cpu device(s).
+Return a NamedTuple of effective host (CPU) device(s).
 """
-function get_host(bckd::Execution; prompt::Bool=false, distributed::Bool=false)
-    cpus,devs,names = Dict(),collect(keys(bckd.cpu)),Vector{String}()
+function get_host(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
+    cpus,devs,names = Dict(),collect(keys(bckd.host)),Vector{String}()
     for key ∈ devs
-        push!(names,bckd.cpu[key][:name])
+        push!(names,bckd.host[key][:name])
     end
     if distributed
         for dev ∈ request("select device(s):",MultiSelectMenu(names))
-            cpus[devs[dev]] = bckd.cpu[devs[dev]]
+            cpus[devs[dev]] = bckd.host[devs[dev]]
         end 
         return NamedTuple(cpus)
     elseif prompt
         dev = request("select device:",RadioMenu(names))
-        return NamedTuple(Dict(devs[dev] => bckd.cpu[devs[dev]]))
+        return NamedTuple(Dict(devs[dev] => bckd.host[devs[dev]]))
     else
-        return NamedTuple(Dict(:dev1 => bckd.cpu[:dev1]))
+        return NamedTuple(Dict(:dev1 => bckd.host[:dev1]))
     end
 end
 
 """
-    get_device(bckd::Execution; prompt::Bool=false, distributed::Bool=false)
+    get_device(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
 
 Description:
 ---
-Return a NamedTuple of gpu(s). When `prompt=true`, show interactive menu for device selection.
+Return a NamedTuple of device (GPU)(s). When `prompt=true`, show interactive menu for device selection.
 """
-function get_device(bckd::Execution; prompt::Bool=false, distributed::Bool=false)
-    devs,names = collect(keys(bckd.gpu)),Vector{String}()
+function get_device(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
+    devs,names = collect(keys(bckd.device)),Vector{String}()
     for key ∈ devs
-        push!(names,bckd.gpu[key][:name])
+        push!(names,bckd.device[key][:name])
     end
     gpus = Dict()
     if distributed
         for dev ∈ request("select device(s):",MultiSelectMenu(names))
-            gpus[devs[dev]] = bckd.gpu[devs[dev]]
+            gpus[devs[dev]] = bckd.device[devs[dev]]
         end 
         return NamedTuple(gpus)
     elseif prompt
         dev = request("select device:",RadioMenu(names))
-        return NamedTuple(Dict(devs[dev] => bckd.gpu[devs[dev]]))
+        return NamedTuple(Dict(devs[dev] => bckd.device[devs[dev]]))
     else
-        return NamedTuple(Dict(devs[1]=>bckd.gpu[devs[1]]))
+        return NamedTuple(Dict(devs[1]=>bckd.device[devs[1]]))
     end
 end
 
 """
-    select_execution_backend(bckd::Execution, select::String="host"; prompt::Bool=false, distributed::Bool=false)
+    select_execution_backend(bckd::ExecutionPlatforms, select::String="host"; prompt::Bool=false, distributed::Bool=false)
 
 Description:
 ---
@@ -71,13 +71,13 @@ julia> select_execution_backend(info.bckd, "host", prompt=true)  # Choose which 
 julia> select_execution_backend(info.bckd, "host", distributed=true)  # Choose multiple CPU cores
 ```
 """
-function select_execution_backend(bckd::Execution, select::String="host"; prompt::Bool=false, distributed::Bool=false)
+function select_execution_backend(bckd::ExecutionPlatforms, select::String="host"; prompt::Bool=false, distributed::Bool=false)
     mode = distributed ? "distributed" : (prompt ? "interactive" : "default")
     if select == "host"
         @info "Using CPU backend ($mode mode)"
         return get_host(bckd; prompt=prompt, distributed=distributed)
     elseif select == "device"
-        if isempty(bckd.gpu)
+        if isempty(bckd.device)
             @info "No GPU available, falling back to CPU backend"
             return get_host(bckd; prompt=prompt, distributed=distributed)
         else

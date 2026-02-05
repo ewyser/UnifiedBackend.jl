@@ -30,22 +30,22 @@ function list_cpu_devices()
 end
 
 """
-    add_backend!(bckd::Execution, ::Val{:x86_64})
+    add_backend!(bckd::ExecutionPlatforms, ::Val{:x86_64})
 
 Description:
 ---
-Populate Execution struct with effective cpu and gpu backend based on hard-coded supported backends. 
+Populate ExecutionPlatforms struct with effective host and device backend based on hard-coded supported backends. 
 """
-function add_backend!(bckd::Execution,::Val{:x86_64})
+function add_backend!(bckd::ExecutionPlatforms,::Val{:x86_64})
 	for (k,(platform,backend)) ∈ enumerate(list_host_backend())
 		if backend[:functional]
             cpu_info = Sys.cpu_info()
             if !isempty(cpu_info) && !isempty(cpu_info[1].model)
 				for brand ∈ backend[:brand]
 					if occursin(brand,cpu_info[1].model)
-                        bckd.cpu = Dict{Symbol,Any}()
+                        bckd.host = Dict{Symbol,Any}()
                         for (k,device) ∈ enumerate(list_cpu_devices())
-                            bckd.cpu[Symbol("dev$(k)")] = Dict(
+                            bckd.host[Symbol("dev$(k)")] = Dict(
                                 :host     => "cpu",   
                                 :platform => :CPU,        
                                 :brand    => brand,            
