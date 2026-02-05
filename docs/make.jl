@@ -29,7 +29,7 @@ makedocs(;
 if get(ENV, "GITHUB_ACTIONS", "false") == "true"
     @info "Deploying documentation..."
     deploydocs(; 
-        repo = repo,
+        repo = "github.com/ewyser/UnifiedBackend.jl.git",
         devbranch = "main",
         branch = "gh-pages",
         versions = ["stable" => "v^", "dev" => "dev"],

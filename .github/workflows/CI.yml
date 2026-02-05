@@ -99,10 +99,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-        shell: julia --project=docs --color=yes {0}
-        run: |
-          using Documenter: DocMeta, doctest, deploydocs
-          using UnifiedBackend
-          DocMeta.setdocmeta!(UnifiedBackend, :DocTestSetup, :(using UnifiedBackend); recursive=true)
-          doctest(UnifiedBackend)
-          include("docs/make.jl")
+        run: julia --project=docs docs/make.jl
