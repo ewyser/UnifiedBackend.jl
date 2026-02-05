@@ -182,3 +182,46 @@ function add_backend!(bckd::ExecutionPlatforms,::Val{:x86_64})
     @info join(bckd.functional,"\n")
 	return nothing
 end
+"""
+    add_backend!(bckd::ExecutionPlatforms, ::Val{:aarch64}) -> Nothing
+
+Initialize and populate the execution platform registry with ARM64 CPU backend configurations.
+
+This is the ARM64-specific implementation of `add_backend!`, following identical logic
+to the x86_64 version but dispatched for ARM-based systems (e.g., Apple Silicon).
+
+# See Also
+
+- [`add_backend!(::ExecutionPlatforms, ::Val{:x86_64})`](@ref): x86-64 implementation
+"""
+function add_backend!(bckd::ExecutionPlatforms,::Val{:aarch64})
+	for (k,(platform,backend)) ∈ enumerate(list_host_backend())
+		if backend[:functional]
+            cpu_info = Sys.cpu_info()
+            if !isempty(cpu_info) && !isempty(cpu_info[1].model)
+				for brand ∈ backend[:brand]
+					if occursin(brand,cpu_info[1].model)
+                        bckd.host = Dict{Symbol,Any}()
+                        for (k,device) ∈ enumerate(list_cpu_devices())
+                            bckd.host[Symbol("dev$(k)")] = Dict(
+                                :host     => "cpu",   
+                                :platform => :CPU,        
+                                :brand    => brand,            
+                                :name     => cpu_info[1].model,
+                                :Backend  => backend[:Backend],
+                                :wrapper  => backend[:wrapper],
+                                :handle   => nothing,
+                            )      
+                        end
+						push!(bckd.functional,"✓ $(brand) $(platform)")
+                        break
+					end
+				end
+            else
+                throw(ErrorException("Could not retrieve CPU model"))
+            end
+		end
+	end
+    @info join(bckd.functional,"\n")
+	return nothing
+end
