@@ -1,6 +1,6 @@
 using UnifiedBackend
 using Test
-using KernelAbstractions
+using KernelAbstractions: CPU
 
 @testset "UnifiedBackend.jl" begin
     
