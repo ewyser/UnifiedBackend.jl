@@ -4,7 +4,7 @@ module ROCmExt
 
 @info "📦 Including ROCmExt.jl extension module"
 
-using ElastoPlasm
+using UnifiedBackend
 
 try
     @info "🔧 Using ROCm backend"
