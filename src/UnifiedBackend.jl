@@ -139,6 +139,16 @@ println(keys(b.exec.device))
 """
 backend() = bckd
 
-export backend
+export backend,
+       Backend,
+       ExecutionPlatforms,
+       select_execution_backend,
+       get_host,
+       get_device,
+       add_backend!,
+       list_host_backend,
+       list_cpu_devices,
+       device_wakeup!,
+       device_free!
 
 end
