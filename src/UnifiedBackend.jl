@@ -51,17 +51,26 @@ import KernelAbstractions.synchronize as sync
 include(joinpath(SRC, "boot/include.jl"))
 sucess = superInc(["boot/needs/types"]; root=SRC)
 
+# Define global backend
+const bckd = Backend(lib=Dict(), exec=Execution())
+
 function __init__()
-    global BACKEND = Backend(
-        lib=Dict(), 
-        exec=Execution(),
-    )
-    
     # Load API modules
     lists = ["home/api"]
-    @info join(superInc(lists; root=SRC, lib=BACKEND.lib), "\n")
+    @info join(superInc(lists; root=SRC, lib=bckd.lib), "\n")
     
+    # Initialize execution backend
+    invokelatest(add_backend!, bckd.exec, Val(:x86_64))
+    
+    # Welcome log
     # welcome_log() 
 end
+
+# macro setup
+macro backend()
+    return :(UnifiedBackend.bckd)
+end
+
+export @backend
 
 end
