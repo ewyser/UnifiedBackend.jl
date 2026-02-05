@@ -99,13 +99,7 @@ const bckd = Backend(lib=Dict(), exec=ExecutionPlatforms())
 
 function __init__()
     # Initialize execution backend based on system architecture
-    if Sys.ARCH == :x86_64
-        invokelatest(add_backend!, bckd.exec, Val(:x86_64))
-    elseif Sys.ARCH == :aarch64
-        invokelatest(add_backend!, bckd.exec, Val(:aarch64))
-    else
-        @warn "Unsupported architecture: $(Sys.ARCH). CPU backend may not be available."
-    end
+    invokelatest(add_backend!, bckd.exec, Val(Sys.ARCH))
     
     # Welcome log
     # welcome_log() 

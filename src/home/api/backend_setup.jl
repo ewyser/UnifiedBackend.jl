@@ -86,20 +86,20 @@ function list_cpu_devices()
 end
 
 """
-    add_backend!(bckd::ExecutionPlatforms, ::Val{:x86_64}) -> Nothing
-    add_backend!(bckd::ExecutionPlatforms, ::Val{:aarch64}) -> Nothing
+    add_backend!(bckd::ExecutionPlatforms, ::Val{ARCH}) where ARCH -> Nothing
 
 Initialize and populate the execution platform registry with host (CPU) backend configurations.
 
-This function detects the current CPU architecture, identifies the processor brand,
-and registers all available CPU cores as execution devices in the provided
-`ExecutionPlatforms` structure. It is typically called automatically during
-module initialization.
+This generic implementation works for any CPU architecture by checking which backend
+in `list_host_backend()` is functional for the current system. The architecture-specific
+behavior is determined by the `:functional` flag in each backend configuration.
+
+To add support for a new architecture, simply add an entry to `list_host_backend()`.
 
 # Arguments
 
 - `bckd::ExecutionPlatforms`: The execution platforms registry to populate
-- `::Val{:x86_64}` or `::Val{:aarch64}`: Architecture specification (dispatched by system)
+- `::Val{ARCH}`: Architecture specification (e.g., `Val(:x86_64)`, `Val(:aarch64)`)
 
 # Behavior
 
@@ -128,8 +128,8 @@ using UnifiedBackend
 # Get the global backend
 b = backend()
 
-# Manually re-initialize (normally automatic)
-add_backend!(b.exec, Val(:x86_64))
+# Initialize for current architecture (usually automatic)
+add_backend!(b.exec, Val(Sys.ARCH))
 
 # Inspect registered devices
 for (dev_id, config) in b.exec.host
@@ -151,50 +151,7 @@ Throws `ErrorException` if CPU model information cannot be retrieved from the sy
 - [`list_host_backend`](@ref): Backend configuration specifications
 - [`list_cpu_devices`](@ref): CPU device enumeration
 """
-function add_backend!(bckd::ExecutionPlatforms,::Val{:x86_64})
-	for (k,(platform,backend)) ∈ enumerate(list_host_backend())
-		if backend[:functional]
-            cpu_info = Sys.cpu_info()
-            if !isempty(cpu_info) && !isempty(cpu_info[1].model)
-				for brand ∈ backend[:brand]
-					if occursin(brand,cpu_info[1].model)
-                        bckd.host = Dict{Symbol,Any}()
-                        for (k,device) ∈ enumerate(list_cpu_devices())
-                            bckd.host[Symbol("dev$(k)")] = Dict(
-                                :host     => "cpu",   
-                                :platform => :CPU,        
-                                :brand    => brand,            
-                                :name     => cpu_info[1].model,
-                                :Backend  => backend[:Backend],
-                                :wrapper  => backend[:wrapper],
-                                :handle   => nothing,
-                            )      
-                        end
-						push!(bckd.functional,"✓ $(brand) $(platform)")
-                        break
-					end
-				end
-            else
-                throw(ErrorException("Could not retrieve CPU model"))
-            end
-		end
-	end
-    @info join(bckd.functional,"\n")
-	return nothing
-end
-"""
-    add_backend!(bckd::ExecutionPlatforms, ::Val{:aarch64}) -> Nothing
-
-Initialize and populate the execution platform registry with ARM64 CPU backend configurations.
-
-This is the ARM64-specific implementation of `add_backend!`, following identical logic
-to the x86_64 version but dispatched for ARM-based systems (e.g., Apple Silicon).
-
-# See Also
-
-- [`add_backend!(::ExecutionPlatforms, ::Val{:x86_64})`](@ref): x86-64 implementation
-"""
-function add_backend!(bckd::ExecutionPlatforms,::Val{:aarch64})
+function add_backend!(bckd::ExecutionPlatforms, ::Val{ARCH}) where ARCH
 	for (k,(platform,backend)) ∈ enumerate(list_host_backend())
 		if backend[:functional]
             cpu_info = Sys.cpu_info()

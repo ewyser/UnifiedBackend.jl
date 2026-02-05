@@ -30,7 +30,6 @@ jobs:
       matrix:
         version:
           - '1.10'  # Minimum supported version
-          - '1'     # Latest stable release
           - 'nightly'
         os:
           - ubuntu-latest
@@ -49,9 +48,6 @@ jobs:
             version: '1.10'
           - os: macos-latest
             arch: aarch64
-            version: '1'
-          - os: macos-latest
-            arch: aarch64
             version: 'nightly'
     steps:
       - uses: actions/checkout@v4
@@ -68,10 +64,10 @@ jobs:
       - uses: julia-actions/julia-runtest@v1
       
       - uses: julia-actions/julia-processcoverage@v1
-        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1.10' && matrix.os == 'ubuntu-latest'
       
       - uses: codecov/codecov-action@v4
-        if: matrix.version == '1' && matrix.os == 'ubuntu-latest'
+        if: matrix.version == '1.10' && matrix.os == 'ubuntu-latest'
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
