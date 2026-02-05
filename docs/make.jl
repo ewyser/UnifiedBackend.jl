@@ -30,7 +30,7 @@ if get(ENV, "GITHUB_ACTIONS", "false") == "true"
     @info "Deploying documentation..."
     deploydocs(; 
         repo = "github.com/ewyser/UnifiedBackend.jl.git",
-        devbranch = "main",
+        devbranch = "dev",
         branch = "gh-pages",
         versions = ["stable" => "v^", "dev" => "dev"],
         forcepush = true,
