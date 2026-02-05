@@ -56,8 +56,8 @@ const bckd = Backend(lib=Dict(), exec=Execution())
 
 function __init__()
     # Load API modules
-    lists = ["home/api"]
-    @info join(superInc(lists; root=SRC, lib=bckd.lib), "\n")
+    lists   = ["home/api"]
+    success = superInc(lists; root=SRC, lib=bckd.lib)
     
     # Initialize execution backend
     invokelatest(add_backend!, bckd.exec, Val(:x86_64))
@@ -66,11 +66,9 @@ function __init__()
     # welcome_log() 
 end
 
-# macro setup
-macro backend()
-    return :(UnifiedBackend.bckd)
-end
+# Accessor function
+backend() = bckd
 
-export @backend
+export backend
 
 end
