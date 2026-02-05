@@ -27,21 +27,25 @@ using KernelAbstractions
         @testset "Backend" begin
             # Test default constructor
             exec = ExecutionPlatforms()
-            bckd = Backend(lib=Dict(), exec=exec)
-            @test bckd isa Backend
+            bckd = UnifiedBackend.Backend(lib=Dict(), exec=exec)
+            @test bckd isa UnifiedBackend.Backend
             @test isempty(bckd.lib)
             @test bckd.exec === exec
             
-            # Test immutability of struct
-            @test !ismutable(Backend)
+            # Test mutability: Backend contains mutable fields (Dict, ExecutionPlatforms)
+            # so Julia considers it mutable even though defined with `struct`
+            @test ismutable(UnifiedBackend.Backend)
             @test ismutable(ExecutionPlatforms)
+            
+            # Test that we cannot reassign fields (struct semantics)
+            @test_throws ErrorException bckd.lib = Dict()
         end
     end
     
     @testset "Global Backend Access" begin
         @testset "backend() function" begin
             b = backend()
-            @test b isa Backend
+            @test b isa UnifiedBackend.Backend
             @test b.exec isa ExecutionPlatforms
             
             # Test singleton behavior - same instance every time
@@ -217,7 +221,7 @@ using KernelAbstractions
         @testset "End-to-end workflow" begin
             # Get backend
             b = backend()
-            @test b isa Backend
+            @test b isa UnifiedBackend.Backend
             
             # Select CPU
             cpu = select_execution_backend(b.exec, "host")
@@ -257,7 +261,7 @@ using KernelAbstractions
         b = backend()
         
         @testset "Return type stability" begin
-            @test @inferred backend() isa Backend
+            @test @inferred backend() isa UnifiedBackend.Backend
             @test @inferred get_host(b.exec) isa NamedTuple
         end
     end
