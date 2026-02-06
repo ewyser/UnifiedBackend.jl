@@ -66,19 +66,26 @@ try
     using CUDA
     @info "🧠 CUDA 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "CUDAExt", "CUDA_backend.jl"))
-    add_backend!(Val(:CUDA), backend())
 catch e
     @warn """
     ⚠️ CUDA extension failed to load.
     
     To enable CUDA support:
       1. Install CUDA.jl in your base environment:
-         ] activate
-         ] add CUDA
-      2. Restart Julia and load UnifiedBackend
+        using Pkg
+        Pkg.activate()  # Activate your base environment
+        Pkg.add("CUDA")
+      2. Restart Julia, and:
+        using UnifiedBackend
+        using CUDA  # Triggers automatic loading of CUDAExt
     
     Error: $e
     """
+end
+
+function __init__()
+    add_backend!(Val(:CUDA), backend())
+    @info "✅ CUDA backend registered successfully"
 end
 
 end

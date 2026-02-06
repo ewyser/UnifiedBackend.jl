@@ -23,14 +23,14 @@ function add_backend!(::Val{:CUDA}, bckd::Backend)
         if backend[:functional]
             for (k, device) ∈ enumerate(backend[:devices]())
                 dev_id += 1
-                bckd.exec.device[Symbol("dev$(dev_id)")] = (; 
-                    dev      = backend[:dev],
-                    platform = platform,
-                    brand    = backend[:brand],
-                    name     = backend[:name](device),
-                    Backend  = backend[:Backend],
-                    wrapper  = backend[:wrapper],
-                    handle   = device,
+                bckd.exec.device[Symbol("dev$(dev_id)")] = Dict(
+                    :host     => "gpu",   
+                    :platform => platform,        
+                    :brand    => backend[:brand],            
+                    :name     => backend[:name](device),
+                    :Backend  => backend[:Backend],
+                    :wrapper  => backend[:wrapper],
+                    :handle   => device,
                 )
             end
             push!(bckd.exec.functional, "✓ $(backend[:brand]) $(platform)")
@@ -63,6 +63,7 @@ Description:
 ---
 Return Dicts of effective cpu and gpu backend based on hard-coded supported backends. 
 """
+#=
 function device_free!(mesh::Mesh,::Val{:CUDA})
     msg = ["freed GPU memory (VRAM):\n"]
     for i in 1:nfields(mesh)
@@ -77,3 +78,4 @@ function device_free!(mesh::Mesh,::Val{:CUDA})
     GC.gc()
     return nothing
 end
+=#
