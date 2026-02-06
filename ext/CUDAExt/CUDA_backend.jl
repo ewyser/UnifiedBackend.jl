@@ -1,11 +1,11 @@
 """
-    add_backend!(::Val{:CUDA},info::Self)
+    add_backend!(::Val{:CUDA}, bckd::Backend)
 
 Description:
 ---
-Return Dicts of gpu backend based on hard-coded supported backends. 
+Return Dicts of device (GPU) backend based on hard-coded supported backends. 
 """
-function add_backend!(::Val{:CUDA},info::Self)
+function add_backend!(::Val{:CUDA}, bckd::Backend)
     availables::Dict{Symbol, Dict{Symbol, Any}} = Dict( 
         :CUDA => Dict(
             :dev       => "gpu",
@@ -18,12 +18,12 @@ function add_backend!(::Val{:CUDA},info::Self)
             :functional => CUDA.functional(),
         )
     )
-    dev_id = length(keys(info.bckd.gpu))
+    dev_id = length(keys(bckd.exec.device))
     for (platform, backend) ∈ availables
         if backend[:functional]
             for (k, device) ∈ enumerate(backend[:devices]())
                 dev_id += 1
-                info.bckd.gpu[Symbol("dev$(dev_id)")] = (; 
+                bckd.exec.device[Symbol("dev$(dev_id)")] = (; 
                     dev      = backend[:dev],
                     platform = platform,
                     brand    = backend[:brand],
@@ -33,12 +33,12 @@ function add_backend!(::Val{:CUDA},info::Self)
                     handle   = device,
                 )
             end
-            push!(info.bckd.functional, "✓ $(backend[:brand]) $(platform)")
+            push!(bckd.exec.functional, "✓ $(backend[:brand]) $(platform)")
         else
-            push!(info.bckd.functional, "✗ $(backend[:brand]) $(platform)")
+            push!(bckd.exec.functional, "✗ $(backend[:brand]) $(platform)")
         end
     end
-    @info join(info.bckd.functional,"\n")
+    @info join(bckd.exec.functional,"\n")
     return nothing
 end
 

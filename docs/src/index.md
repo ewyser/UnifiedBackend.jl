@@ -1,32 +1,38 @@
 ```@meta
-CurrentModule = ElastoPlasm
+CurrentModule = UnifiedBackend
 ```
+
+# UnifiedBackend.jl
+
+A unified backend abstraction layer for CPU and GPU execution in Julia.
+
 ## Overview
 
-This package is an evolution of the somewhat cumbersome-to-use [`ep2-3De v1.0`](https://github.com/ewyser/ep2-3De), and is entirely written in **Julia**. It is designed for **rapid prototyping** while maintaining **reasonable production capabilities**. It addresses the following key aspects:
+UnifiedBackend provides a consistent interface for managing and executing code across different computational backends (CPU, CUDA, ROCm) with automatic device detection and runtime configuration.
 
-- **Updated Lagrangian explicit formulation** for elastoplastic simulations.
-- Supports both **finite** and **infinitesimal deformation** frameworks:
-  - **Finite deformation**: employs logarithmic strains and Kirchhoff stresses.
-  - **Infinitesimal deformation**: based on a **Jaumann rate** formulation.
-- Compatible with multiple **shape function bases**:
-    - Standard linear shape function $N_n(\boldsymbol{x}_p)$
-    - GIMP shape function $S_n(\boldsymbol{x}_p)$
-    - Boundary-modified cubic B-spline shape function $\phi_n(\boldsymbol{x}_p)$
-- Provides mappings between nodes (denoted $n$ or $v$) and material points (denoted $p$), using:
-    - FLIP with augmented mUSL procedure
-    - TPIC with standard USL procedure
+## Features
 
-The solver can generate initial fields $f(\boldsymbol{x})$—such as the cohesion $c(\boldsymbol{x}_p)$ or internal friction angle $\varphi(\boldsymbol{x}_p)$—using random Gaussian fields, with $\boldsymbol{x}_p$ representing a material point’s coordinate.
+- **Automatic CPU detection**: Supports x86_64 and aarch64 (Apple Silicon)
+- **GPU support**: NVIDIA CUDA and AMD ROCm via package extensions  
+- **Interactive selection**: Choose devices via terminal menus
+- **Multi-device**: Run on multiple CPUs or GPUs
+- **Type-stable**: Uses KernelAbstractions.jl
 
-<p align="center">
-  <img src="./assets/img/epII.png" alt="Plastic strain" style="width:80%;"/>>
-  <br/>
-  <em>Figure: Slumping dynamics (without volumetric locking corrections) showing the accumulated plastic strain $\epsilon_p^{\mathrm{acc}}$ after an elastic load of 8 s and an additional elasto-plastic load of ≈ 7 s.</em>
-</p>
+## Quick Start
 
-<p align="center">
-  <img src="./assets/img/c0.png" alt="Initial cohesion field" style="width:80%;"/>
-  <br/>
-  <em>Figure: Initial cohesion field \( c_0(\boldsymbol{x}_p) \) with average \( \mu = 20 \,\text{kPa} \) and variance \( \sigma = \pm 5 \,\text{kPa} \).</em>
-</p>
+```julia
+using UnifiedBackend
+
+# Access backend
+b = backend()
+
+# Use CPU
+cpu = select_execution_backend(b.exec, "host")
+data = cpu.dev1[:wrapper](rand(1000, 1000))
+
+# Use GPU (with CUDA.jl loaded)
+gpu = select_execution_backend(b.exec, "device")
+data = gpu.dev1[:wrapper](rand(1000, 1000))
+```
+
+See the [API Reference](api.md) and [Extensions](extensions.md) for more details.

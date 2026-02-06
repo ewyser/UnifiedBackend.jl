@@ -3,14 +3,14 @@ uuid = "53203a36-6468-4ce1-9d2a-5f04ad17d58e"
 authors = ["madmax"]
 version = "0.0.1"
 
-[compat]
-julia = "1.6.7"
-
-[extras]
+[deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
 
 [weakdeps]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
@@ -19,3 +19,12 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 [extensions]
 CUDAExt = "CUDA"
 ROCmExt = "AMDGPU"
+
+[compat]
+julia = "1.6.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
