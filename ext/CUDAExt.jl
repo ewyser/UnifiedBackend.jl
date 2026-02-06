@@ -66,6 +66,7 @@ try
     using CUDA
     @info "🧠 CUDA 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "CUDAExt", "CUDA_backend.jl"))
+    global cuda_success = true
 catch e
     @warn """
     ⚠️ CUDA extension failed to load.
@@ -81,11 +82,19 @@ catch e
     
     Error: $e
     """
+    global cuda_success = false
 end
 
 function __init__()
-    add_backend!(Val(:CUDA), backend())
-    @info "✅ CUDA backend registered successfully"
+    if cuda_success
+        add_backend!(Val(:CUDA), backend())
+        @info "✅ CUDA backend registered successfully"
+        return nothing
+    else
+        @info "❌ CUDA backend registration failed"
+        return nothing
+    end
+
 end
 
 end

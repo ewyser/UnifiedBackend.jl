@@ -66,6 +66,7 @@ try
     using AMDGPU
     @info "🧠 ROCm 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "ROCmExt", "ROCm_backend.jl"))
+    global rocm_success = true
 catch e
     @warn """
     ⚠️ ROCm extension failed to load.
@@ -82,11 +83,16 @@ catch e
 
     Error: $e
     """
+    global rocm_success = false
 end
 
 function __init__()
-    add_backend!(Val(:ROCm), backend())
-    @info "✅ ROCm backend registered successfully"
+    if rocm_success
+        add_backend!(Val(:ROCm), backend())
+        return @info "✅ ROCm backend registered successfully"
+    else
+        return @info "❌ ROCm backend registration failed"
+    end
 end
 
 end
