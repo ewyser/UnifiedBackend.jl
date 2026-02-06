@@ -56,7 +56,7 @@ end
 """
 module ROCmExt
 
-@info "📦 Including ROCmExt.jl extension module"
+@info "📦 Including extension module"
 
 using UnifiedBackend
 import UnifiedBackend: add_backend!
@@ -66,20 +66,27 @@ try
     using AMDGPU
     @info "🧠 ROCm 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "ROCmExt", "ROCm_backend.jl"))
-    add_backend!(Val(:ROCm), backend())
 catch e
     @warn """
     ⚠️ ROCm extension failed to load.
     
     To enable ROCm support:
       1. Install AMDGPU.jl in your base environment:
-         ] activate
-         ] add AMDGPU
+        using Pkg
+        Pkg.activate()  # Activate your base environment
+        Pkg.add("AMDGPU")
       2. Ensure ROCm runtime is installed on your system
-      3. Restart Julia and load UnifiedBackend
-    
+      3. Restart Julia, and:
+        using UnifiedBackend
+        using AMDGPU  # Triggers automatic loading of ROCmExt
+
     Error: $e
     """
+end
+
+function __init__()
+    add_backend!(Val(:ROCm), backend())
+    @info "✅ ROCm backend registered successfully"
 end
 
 end
