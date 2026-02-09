@@ -78,6 +78,7 @@ jobs:
     permissions:
       contents: write
       statuses: write
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v6
       
