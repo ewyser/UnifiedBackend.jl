@@ -1,5 +1,77 @@
-export Backend, ExecutionPlatforms
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
+# Exports
+export Host, Device, ExecutionPlatforms, Backend
 
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
+# Abstract and concrete device types
+abstract type AbstractExecutionDevice end
+
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
+"""
+    Host
+
+Struct representing a CPU (host) device configuration.
+
+# Fields
+- `category::Symbol`: Device category (`:cpu`)
+- `platform::Symbol`: Platform identifier (e.g., `:CPU`)
+- `brand::String`: Manufacturer brand (e.g., "Intel", "AMD")
+- `name::String`: Specific device model name
+- `Backend::Any`: KernelAbstractions backend instance
+- `wrapper::Any`: Array wrapper type (e.g., `Array`)
+- `handle::Any`: Device handle (unused for CPU)
+
+# Example
+```julia
+Host(brand="AMD", name="AMD Ryzen 7 9800X3D", Backend=CPU())
+```
+"""
+Base.@kwdef mutable struct Host <: AbstractExecutionDevice
+    category::Symbol = :cpu
+    platform::Symbol = :CPU
+    brand::String = ""
+    name::String = ""
+    Backend::Any = nothing
+    wrapper::Any = Array
+    handle::Any = nothing
+end
+
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
+"""
+    Device
+
+Struct representing an accelerator (GPU) device configuration.
+
+# Fields
+- `category::Symbol`: Device category (`:gpu`)
+- `platform::Symbol`: Platform identifier (e.g., `:CUDA`, `:ROCm`)
+- `brand::String`: Manufacturer brand (e.g., "NVIDIA", "AMD")
+- `name::String`: Specific device model name
+- `Backend::Any`: KernelAbstractions backend instance
+- `wrapper::Any`: Array wrapper type (e.g., `CuArray`, `ROCArray`)
+- `handle::Any`: Device handle for direct device manipulation
+
+# Example
+```julia
+Device(brand="NVIDIA", name="RTX 4090", Backend=CUDA())
+```
+"""
+Base.@kwdef mutable struct Device <: AbstractExecutionDevice
+    category::Symbol = :gpu
+    platform::Symbol = :CUDA
+    brand::String = ""
+    name::String = ""
+    Backend::Any = nothing
+    wrapper::Any = nothing
+    handle::Any = nothing
+end
+
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
 """
     ExecutionPlatforms
 
@@ -9,24 +81,11 @@ This structure maintains the registry of available computational devices and the
 It is designed to be populated at runtime as backends are initialized and devices are detected.
 
 # Fields
-
 - `functional::Vector{String}`: List of successfully initialized execution platforms with status messages
-- `host::Dict{Symbol,Dict{Symbol,Any}}`: Host (CPU) device configurations, indexed by device symbols (`:dev1`, `:dev2`, etc.)
-- `device::Dict{Symbol,Dict{Symbol,Any}}`: Accelerator (GPU) device configurations, indexed by device symbols
+- `host::Dict{Symbol,Host}`: Host (CPU) device configurations, indexed by device symbols (`:dev1`, `:dev2`, etc.)
+- `device::Dict{Symbol,Device}`: Accelerator (GPU) device configurations, indexed by device symbols
 
-# Host/Device Configuration Keys
-
-Each device dictionary contains:
-- `:host` or `:dev`: Device category ("cpu" or "gpu")
-- `:platform`: Platform identifier (`:CPU`, `:CUDA`, `:ROCm`, etc.)
-- `:brand`: Manufacturer brand (e.g., "Intel", "AMD", "NVIDIA")
-- `:name`: Specific device model name
-- `:Backend`: KernelAbstractions backend instance
-- `:wrapper`: Array wrapper type (`Array`, `CuArray`, `ROCArray`, etc.)
-- `:handle`: Device handle for direct device manipulation
-
-# Examples
-
+# Example
 ```julia
 using UnifiedBackend
 
@@ -41,35 +100,35 @@ println(exec.functional)  # ["Available execution platform(s):", "✓ Intel x86_
 
 # Access first CPU device configuration
 cpu_dev = exec.host[:dev1]
-println(cpu_dev[:name])      # "Intel(R) Core(TM) i9-9900K..."
-println(cpu_dev[:platform])  # :CPU
-println(cpu_dev[:Backend])   # CPU()
+println(cpu_dev.name)      # "Intel(R) Core(TM) i9-9900K..."
+println(cpu_dev.platform)  # :CPU
+println(cpu_dev.Backend)   # CPU()
 
 # After loading CUDA
 using CUDA
 # GPU devices automatically registered in exec.device
 gpu_dev = exec.device[:dev1]
-println(gpu_dev[:brand])     # "NVIDIA"
+println(gpu_dev.brand)     # "NVIDIA"
 ```
 
 # See Also
-
 - [`Backend`](@ref): Top-level configuration containing an `ExecutionPlatforms` instance
 - [`add_backend!`](@ref): Function to populate this structure with available devices
-- [`select_execution_backend`](@ref): Select devices from this registry
 """
 Base.@kwdef mutable struct ExecutionPlatforms
-    functional::Vector{String} = String["Available execution platform(s):"]
-    host  ::Dict{Symbol,Dict{Symbol,Any}} = Dict()  
-    device::Dict{Symbol,Dict{Symbol,Any}} = Dict()
+    functional::Vector{String} = ["Available execution platform(s):"]
+    host  ::Dict{Symbol,Host} = Dict()
+    device::Dict{Symbol,Device} = Dict()
 end
 
+#============================================================================================================================================================================================
+============================================================================================================================================================================================#
 """
     Backend
 
 Immutable struct representing the unified backend system configuration.
-
-This is the top-level configuration structure that manages the entire UnifiedBackend session.
+    host  ::Hosts = Hosts()
+    device::Devices = Devices()
 It provides an immutable container for library tracking and execution platform management.
 The structure itself is immutable, but the contained dictionaries and `ExecutionPlatforms`
 are mutable, allowing runtime updates to device configurations.
@@ -109,7 +168,7 @@ end
 # Create a custom backend (typically not needed - use global instance)
 custom_backend = Backend(
     lib = Dict{String,Any}("custom" => "data"),
-    exec = ExecutionPlatforms()
+cpus = b.exec.host
 )
 ```
 

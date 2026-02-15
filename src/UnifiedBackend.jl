@@ -22,7 +22,7 @@ provides a simple API for device selection and management.
 
 - [`Backend`](@ref): Top-level immutable configuration structure
 - [`ExecutionPlatforms`](@ref): Mutable host/device execution platform registry
-- [`backend`](@ref): Accessor function for the global backend instance
+- [`get_backend`](@ref): Accessor function for the global backend instance
 - [`add_backend!`](@ref): Initialize available execution platforms
 - [`select_execution_backend`](@ref): Choose and configure compute devices
 - [`get_host`](@ref): Select CPU execution devices
@@ -34,7 +34,7 @@ provides a simple API for device selection and management.
 using UnifiedBackend
 
 # Access the global backend configuration
-b = backend()
+b = get_backend()
 
 # Use CPU (default - first core)
 cpu_device = select_execution_backend(b.exec, "host")
@@ -106,7 +106,7 @@ function __init__()
 end
 
 """
-    backend() -> Backend
+    get_backend() -> Backend
 
 Get the global backend configuration instance.
 
@@ -121,7 +121,7 @@ and library registry for the entire UnifiedBackend session.
 using UnifiedBackend
 
 # Access the global backend
-b = backend()
+b = get_backend()
 
 # Inspect available platforms
 println(b.exec.functional)
@@ -137,9 +137,9 @@ println(keys(b.exec.device))
 - [`Backend`](@ref): Backend configuration structure
 - [`ExecutionPlatforms`](@ref): Execution platform registry
 """
-backend() = bckd
+get_backend() = bckd
 
-export backend,
+export get_backend,
        Backend,
        ExecutionPlatforms,
        select_execution_backend,

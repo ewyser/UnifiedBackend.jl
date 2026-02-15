@@ -16,12 +16,12 @@ using KernelAbstractions: CPU
             # Test keyword constructor
             exec2 = ExecutionPlatforms(
                 functional = ["test"],
-                host = Dict(:dev1 => Dict(:name => "TestCPU")),
+                host = Dict(:dev1 => Host(name = "TestCPU")),
                 device = Dict()
             )
             @test exec2.functional == ["test"]
             @test length(exec2.host) == 1
-            @test exec2.host[:dev1][:name] == "TestCPU"
+            @test exec2.host[:dev1].name == "TestCPU"
         end
         
         @testset "Backend" begin
@@ -43,18 +43,17 @@ using KernelAbstractions: CPU
     end
     
     @testset "Global Backend Access" begin
-        @testset "backend() function" begin
-            b = backend()
-            @test b isa UnifiedBackend.Backend
-            @test b.exec isa ExecutionPlatforms
-            
-            # Test singleton behavior - same instance every time
-            b2 = backend()
-            @test b === b2
-        end
+                @testset "backend() function" begin
+                        b = get_backend()
+                        @test b isa UnifiedBackend.Backend
+                        @test b.exec isa ExecutionPlatforms
+                        # Test singleton behavior - same instance every time
+                        b2 = get_backend()
+                        @test b === b2
+                end
         
         @testset "Initial state" begin
-            b = backend()
+            b = get_backend()
             
             # Should have initialized execution platforms
             @test !isempty(b.exec.functional)
@@ -69,28 +68,24 @@ using KernelAbstractions: CPU
     end
     
     @testset "Backend Setup" begin
-        @testset "list_host_backend()" begin
+            @testset "list_host_backend()" begin
             backends = UnifiedBackend.list_host_backend()
-            
             @test backends isa Dict{Symbol, Dict{Symbol, Any}}
             @test haskey(backends, :x86_64)
             @test haskey(backends, :aarch64)
-            
             # Check x86_64 configuration
             x86 = backends[:x86_64]
             @test x86[:host] == "cpu"
             @test x86[:Backend] isa CPU
             @test x86[:wrapper] === Array
             @test "Intel(R)" ∈ x86[:brand] || "AMD" ∈ x86[:brand]
-            
             # Check aarch64 configuration
             arm = backends[:aarch64]
             @test arm[:host] == "cpu"
             @test arm[:Backend] isa CPU
             @test "Apple" ∈ arm[:brand] || "AMD" ∈ arm[:brand]
-            
             # One should be functional based on current architecture
-            @test backends[:x86_64][:functional] || backends[:aarch64][:functional]
+            @test x86[:functional] || arm[:functional]
         end
         
         @testset "list_cpu_devices()" begin
@@ -129,35 +124,32 @@ using KernelAbstractions: CPU
             # Check device structure
             for (dev_id, config) in exec.host
                 @test dev_id isa Symbol
-                @test config isa Dict{Symbol, Any}
-                @test config[:host] == "cpu"
-                @test config[:platform] == :CPU
-                @test haskey(config, :brand)
-                @test haskey(config, :name)
-                @test config[:Backend] isa CPU
-                @test config[:wrapper] === Array
-                @test config[:handle] === nothing
+                @test config isa Host
+                @test config.category == :cpu
+                @test config.platform == :CPU
+                @test !isempty(config.brand)
+                @test !isempty(config.name)
+                @test config.Backend isa CPU
+                @test config.wrapper === Array
+                @test config.handle === nothing
             end
         end
     end
     
     @testset "Device Selection" begin
-        b = backend()
+        b = get_backend()
         
         @testset "get_host()" begin
             # Default mode - should return first device
             cpu = get_host(b.exec)
             @test cpu isa NamedTuple
             @test haskey(cpu, :dev1)
-            @test cpu.dev1 isa Dict{Symbol, Any}
-            @test cpu.dev1[:platform] == :CPU
-            
+            @test cpu.dev1 isa Host
+            @test cpu.dev1.platform == :CPU
             # Test that device configuration is complete
-            @test haskey(cpu.dev1, :name)
-            @test haskey(cpu.dev1, :Backend)
-            @test haskey(cpu.dev1, :wrapper)
-            @test cpu.dev1[:Backend] isa CPU
-            @test cpu.dev1[:wrapper] === Array
+            @test !isempty(cpu.dev1.name)
+            @test cpu.dev1.Backend isa CPU
+            @test cpu.dev1.wrapper === Array
         end
         
         @testset "get_device() - no GPU" begin
@@ -173,7 +165,8 @@ using KernelAbstractions: CPU
                 cpu = select_execution_backend(b.exec, "host")
                 @test cpu isa NamedTuple
                 @test haskey(cpu, :dev1)
-                @test cpu.dev1[:platform] == :CPU
+                @test cpu.dev1 isa Host
+                @test cpu.dev1.platform == :CPU
             end
             
             # Device selection with fallback
@@ -188,7 +181,8 @@ using KernelAbstractions: CPU
                 else
                     # Fell back to CPU
                     @test haskey(result, :dev1)
-                    @test result.dev1[:platform] == :CPU
+                    @test result.dev1 isa Host
+                    @test result.dev1.platform == :CPU
                 end
             end
             
@@ -210,7 +204,6 @@ using KernelAbstractions: CPU
         @testset "device_free!() CPU" begin
             # Should not throw error
             @test device_free!(nothing, Val(:CPU)) === nothing
-            
             # Test with actual data
             data = rand(100)
             @test device_free!(data, Val(:CPU)) === nothing
@@ -220,48 +213,42 @@ using KernelAbstractions: CPU
     @testset "Integration Tests" begin
         @testset "End-to-end workflow" begin
             # Get backend
-            b = backend()
+            b = get_backend()
             @test b isa UnifiedBackend.Backend
             
             # Select CPU
             cpu = select_execution_backend(b.exec, "host")
             @test cpu isa NamedTuple
-            
             # Get backend instance
-            backend_instance = cpu.dev1[:Backend]
+            backend_instance = cpu.dev1.Backend
             @test backend_instance isa CPU
-            
             # Get array type
-            array_type = cpu.dev1[:wrapper]
+            array_type = cpu.dev1.wrapper
             @test array_type === Array
-            
             # Create array
             data = array_type(rand(10, 10))
             @test data isa Array
             @test size(data) == (10, 10)
-            
             # Clean up
             device_free!(data, Val(:CPU))
         end
         
         @testset "Multiple backend accesses" begin
             # Should maintain consistency
-            b1 = backend()
+            b1 = get_backend()
             cpu1 = select_execution_backend(b1.exec, "host")
-            
-            b2 = backend()
+            b2 = get_backend()
             cpu2 = select_execution_backend(b2.exec, "host")
-            
             @test b1 === b2
-            @test cpu1.dev1[:name] == cpu2.dev1[:name]
+            @test cpu1.dev1.name == cpu2.dev1.name
         end
     end
     
     @testset "Type Stability" begin
-        b = backend()
+        b = get_backend()
         
         @testset "Return type stability" begin
-            @test @inferred backend() isa UnifiedBackend.Backend
+            @test @inferred get_backend() isa UnifiedBackend.Backend
             @test @inferred get_host(b.exec) isa NamedTuple
         end
     end

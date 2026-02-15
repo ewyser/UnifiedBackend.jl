@@ -152,33 +152,34 @@ Throws `ErrorException` if CPU model information cannot be retrieved from the sy
 - [`list_cpu_devices`](@ref): CPU device enumeration
 """
 function add_backend!(bckd::ExecutionPlatforms, ::Val{ARCH}) where ARCH
-	for (k,(platform,backend)) ∈ enumerate(list_host_backend())
-		if backend[:functional]
+    for (k,(platform,backend)) ∈ enumerate(list_host_backend())
+        if backend[:functional]
             cpu_info = Sys.cpu_info()
             if !isempty(cpu_info) && !isempty(cpu_info[1].model)
-				for brand ∈ backend[:brand]
-					if occursin(brand,cpu_info[1].model)
-                        bckd.host = Dict{Symbol,Any}()
+                for brand ∈ backend[:brand]
+                    if occursin(brand,cpu_info[1].model)
+                        hosts_dict = Dict{Symbol,Host}()
                         for (k,device) ∈ enumerate(list_cpu_devices())
-                            bckd.host[Symbol("dev$(k)")] = Dict(
-                                :host     => "cpu",   
-                                :platform => :CPU,        
-                                :brand    => brand,            
-                                :name     => cpu_info[1].model,
-                                :Backend  => backend[:Backend],
-                                :wrapper  => backend[:wrapper],
-                                :handle   => nothing,
-                            )      
+                            hosts_dict[Symbol("dev$(k)")] = Host(
+                                category = :cpu,
+                                platform = :CPU,
+                                brand    = brand,
+                                name     = cpu_info[1].model,
+                                Backend  = backend[:Backend],
+                                wrapper  = backend[:wrapper],
+                                handle   = nothing,
+                            )
                         end
-						push!(bckd.functional,"✓ $(brand) $(platform)")
+                        bckd.host = hosts_dict
+                        push!(bckd.functional, "✓ $(brand) $(platform)")
                         break
-					end
-				end
+                    end
+                end
             else
                 throw(ErrorException("Could not retrieve CPU model"))
             end
-		end
-	end
-    @info join(bckd.functional,"\n")
-	return nothing
+        end
+    end
+    @info join(bckd.functional, "\n")
+    return nothing
 end
