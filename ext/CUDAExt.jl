@@ -37,10 +37,10 @@ if !isempty(b.exec.device)
     gpu = select_execution_backend(b.exec, "device")
     
     # Access CUDA-specific properties
-    println(gpu.dev1[:name])      # "NVIDIA GeForce RTX 3090"
-    println(gpu.dev1[:Backend])   # CUDABackend()
-    println(gpu.dev1[:wrapper])   # CuArray
-    println(gpu.dev1[:handle])    # CuDevice(0)
+    println(gpu[:dev1].name)      # "NVIDIA GeForce RTX 3090"
+    println(gpu[:dev1].Backend)   # CUDABackend()
+    println(gpu[:dev1].wrapper)   # CuArray
+    println(gpu[:dev1].handle)    # CuDevice(0)
 end
 ```
 
@@ -87,7 +87,7 @@ end
 
 function __init__()
     if cuda_success
-        add_backend!(Val(:CUDA), backend())
+        add_backend!(Val(:CUDA), get_backend())
         @info "✅ CUDA backend registered successfully"
         return nothing
     else
