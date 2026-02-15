@@ -59,7 +59,7 @@ module ROCmExt
 @info "📦 Including extension module"
 
 using UnifiedBackend
-import UnifiedBackend: add_backend!
+import UnifiedBackend: add_backend!, device_wakeup!, device_free!
 
 try
     @info "🔧 Using ROCm backend"
@@ -75,7 +75,7 @@ catch e
       1. Install AMDGPU.jl in your base environment:
         using Pkg
         Pkg.activate()  # Activate your base environment
-        Pkg.add("AMDGPU")
+        Pkg.add(\"AMDGPU\")
       2. Ensure ROCm runtime is installed on your system
       3. Restart Julia, and:
         using UnifiedBackend
@@ -88,7 +88,7 @@ end
 
 function __init__()
     if rocm_success
-        add_backend!(Val(:ROCm), backend())
+        add_backend!(Val(:ROCm), get_backend())
         return @info "✅ ROCm backend registered successfully"
     else
         return @info "❌ ROCm backend registration failed"

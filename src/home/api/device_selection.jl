@@ -61,15 +61,15 @@ When `prompt=true` or `distributed=true`, displays terminal menus using REPL.Ter
 function get_host(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
     cpus,devs,names = Dict(),collect(keys(bckd.host)),Vector{String}()
     for key ∈ devs
-        push!(names,bckd.host[key][:name])
+        push!(names, bckd.host[key].name)
     end
     if distributed
-        for dev ∈ request("select device(s):",MultiSelectMenu(names))
+        for dev ∈ request("select device(s):", MultiSelectMenu(names))
             cpus[devs[dev]] = bckd.host[devs[dev]]
-        end 
+        end
         return NamedTuple(cpus)
     elseif prompt
-        dev = request("select device:",RadioMenu(names))
+        dev = request("select device:", RadioMenu(names))
         return NamedTuple(Dict(devs[dev] => bckd.host[devs[dev]]))
     else
         return NamedTuple(Dict(:dev1 => bckd.host[:dev1]))
@@ -153,21 +153,21 @@ for automatic fallback to CPU.
 - [`ExecutionPlatforms`](@ref): Device registry structure
 """
 function get_device(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
-    devs,names = collect(keys(bckd.device)),Vector{String}()
+    devs, names = collect(keys(bckd.device)), Vector{String}()
     for key ∈ devs
-        push!(names,bckd.device[key][:name])
+        push!(names, bckd.device[key].name)
     end
     gpus = Dict()
     if distributed
-        for dev ∈ request("select device(s):",MultiSelectMenu(names))
+        for dev ∈ request("select device(s):", MultiSelectMenu(names))
             gpus[devs[dev]] = bckd.device[devs[dev]]
-        end 
+        end
         return NamedTuple(gpus)
     elseif prompt
-        dev = request("select device:",RadioMenu(names))
+        dev = request("select device:", RadioMenu(names))
         return NamedTuple(Dict(devs[dev] => bckd.device[devs[dev]]))
     else
-        return NamedTuple(Dict(devs[1]=>bckd.device[devs[1]]))
+        return NamedTuple(Dict(devs[1] => bckd.device[devs[1]]))
     end
 end
 

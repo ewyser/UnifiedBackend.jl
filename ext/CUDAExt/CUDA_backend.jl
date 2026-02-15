@@ -23,14 +23,14 @@ function add_backend!(::Val{:CUDA}, bckd::Backend)
         if backend[:functional]
             for (k, device) ∈ enumerate(backend[:devices]())
                 dev_id += 1
-                bckd.exec.device[Symbol("dev$(dev_id)")] = Dict(
-                    :host     => "gpu",   
-                    :platform => platform,        
-                    :brand    => backend[:brand],            
-                    :name     => backend[:name](device),
-                    :Backend  => backend[:Backend],
-                    :wrapper  => backend[:wrapper],
-                    :handle   => device,
+                bckd.exec.device[Symbol("dev$(dev_id)")] = Device(
+                    category = :gpu,
+                    platform = platform,
+                    brand    = backend[:brand],
+                    name     = backend[:name](device),
+                    Backend  = backend[:Backend],
+                    wrapper  = backend[:wrapper],
+                    handle   = device,
                 )
             end
             push!(bckd.exec.functional, "✓ $(backend[:brand]) $(platform)")
