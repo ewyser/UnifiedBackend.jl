@@ -67,6 +67,7 @@ try
     @info "🧠 CUDA 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "CUDAExt", "CUDA_backend.jl"))
     global cuda_success = true
+    global cuda_functional = CUDA.functional()
 catch e
     @warn """
     ⚠️ CUDA extension failed to load.
@@ -86,9 +87,12 @@ catch e
 end
 
 function __init__()
-    if cuda_success
+    if cuda_success && cuda_functional
+        @info "✅ CUDA extension loaded successfully. Registering CUDA backend..."
         add_backend!(Val(:CUDA), get_backend())
-        @info "✅ CUDA backend registered successfully"
+        return nothing
+    elseif cuda_success && !cuda_functional
+        @info "🟡 CUDA extension loaded successfully but CUDA is not functional on this system."
         return nothing
     else
         @info "❌ CUDA backend registration failed"
