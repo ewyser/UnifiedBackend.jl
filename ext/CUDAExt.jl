@@ -27,7 +27,7 @@ Pkg.add("CUDA")
 using UnifiedBackend
 using CUDA  # Triggers automatic loading of CUDAExt
 
-b = backend()
+b = get_backend()
 
 # Check if CUDA devices were registered
 if !isempty(b.exec.device)
