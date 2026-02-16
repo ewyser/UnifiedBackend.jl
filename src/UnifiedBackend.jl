@@ -83,9 +83,6 @@ using Revise, Pkg, Test
 using ProgressMeter, REPL.TerminalMenus
 
 using KernelAbstractions, Adapt, Base.Threads
-import KernelAbstractions.@atomic as @atom
-import KernelAbstractions.Kernel as Cairn
-import KernelAbstractions.synchronize as sync
 
 # Include types
 include(joinpath(SRC, "boot/include.jl"))
