@@ -27,7 +27,7 @@ Pkg.add("AMDGPU")
 using UnifiedBackend
 using AMDGPU  # Triggers automatic loading of ROCmExt
 
-b = backend()
+b = get_backend()
 
 # Check if ROCm devices were registered
 if !isempty(b.exec.device)
@@ -37,10 +37,10 @@ if !isempty(b.exec.device)
     gpu = select_execution_backend(b.exec, "device")
     
     # Access ROCm-specific properties
-    println(gpu.dev1[:name])      # "AMD Radeon RX 6900 XT"
-    println(gpu.dev1[:Backend])   # ROCBackend()
-    println(gpu.dev1[:wrapper])   # ROCArray
-    println(gpu.dev1[:handle])    # HIPDevice(0)
+    println(gpu[:dev1].name)      # "AMD Radeon RX 6900 XT"
+    println(gpu[:dev1].Backend)   # ROCBackend()
+    println(gpu[:dev1].wrapper)   # ROCArray
+    println(gpu[:dev1].handle)    # HIPDevice(0)
 end
 ```
 
