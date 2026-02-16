@@ -67,6 +67,7 @@ try
     @info "🧠 ROCm 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "ROCmExt", "ROCm_backend.jl"))
     global rocm_success = true
+    global rocm_functional = AMDGPU.functional()
 catch e
     @warn """
     ⚠️ ROCm extension failed to load.
@@ -87,9 +88,12 @@ catch e
 end
 
 function __init__()
-    if rocm_success
+    if rocm_success && rocm_functional
         add_backend!(Val(:ROCm), get_backend())
         return @info "✅ ROCm backend registered successfully"
+    elseif rocm_success && !rocm_functional
+        @info "🟡 ROCm extension loaded successfully but ROCm is not functional on this system."
+        return nothing
     else
         return @info "❌ ROCm backend registration failed"
     end
