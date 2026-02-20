@@ -10,7 +10,9 @@ CollapsedDocStrings = true
 ### Backend Access
 
 ```@docs
-backend
+get_backend
+Host
+Device
 Backend
 ExecutionPlatforms
 ```

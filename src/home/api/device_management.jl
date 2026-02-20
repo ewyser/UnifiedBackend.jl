@@ -23,7 +23,7 @@ device_wakeup!()  # ErrorException
 
 # After loading CUDA
 using CUDA
-gpu = select_execution_backend(backend().exec, "device")
+gpu = select_execution_backend(get_backend().exec, "device")
 device_wakeup!(gpu.dev1[:handle])  # Sets active CUDA device
 ```
 

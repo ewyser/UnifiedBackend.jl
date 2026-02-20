@@ -151,7 +151,7 @@ The `Backend` struct uses an immutable wrapper around mutable data pattern:
 using UnifiedBackend
 
 # Access the global backend instance
-b = backend()
+b = get_backend()
 
 # Inspect library registry (populated by module loading system)
 println(keys(b.lib))
@@ -174,17 +174,17 @@ cpus = b.exec.host
 
 # Global Instance
 
-UnifiedBackend maintains a global singleton instance accessed via [`backend()`](@ref):
+UnifiedBackend maintains a global singleton instance accessed via [`get_backend()`](@ref):
 
 ```julia
-b = backend()
+b = get_backend()
 devices = select_execution_backend(b.exec, "host")
 ```
 
 # See Also
 
 - [`ExecutionPlatforms`](@ref): Execution platform registry structure
-- [`backend`](@ref): Accessor for the global `Backend` instance
+- [`get_backend`](@ref): Accessor for the global `Backend` instance
 - [`select_execution_backend`](@ref): Device selection function
 """
 Base.@kwdef struct Backend

@@ -25,7 +25,7 @@ Pkg.add("CUDA")
 using UnifiedBackend
 using CUDA  # Automatically loads CUDAExt
 
-b = backend()
+b = get_backend()
 
 # Check for CUDA devices
 if !isempty(b.exec.device)
@@ -67,7 +67,7 @@ Pkg.add("AMDGPU")
 using UnifiedBackend
 using AMDGPU  # Automatically loads ROCmExt
 
-b = backend()
+b = get_backend()
 
 # Check for ROCm devices
 if !isempty(b.exec.device)
@@ -98,7 +98,7 @@ When requesting GPU execution without GPU extensions loaded, UnifiedBackend auto
 
 ```julia
 # No GPU package loaded
-gpu = select_execution_backend(backend().exec, "device")
+gpu = select_execution_backend(get_backend().exec, "device")
 # Info: No GPU available, falling back to CPU backend
 # Returns CPU device instead
 ```
@@ -137,7 +137,7 @@ AMDGPU.versioninfo()  # Check ROCm installation
 3. **Extension loading**:
 ```julia
 using UnifiedBackend
-backend()  # Check exec.functional for loaded backends
+get_backend()  # Check exec.functional for loaded backends
 ```
 
 Warnings during extension loading are captured and displayed with troubleshooting hints.

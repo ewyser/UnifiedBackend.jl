@@ -3,32 +3,30 @@ export add_backend!
 """
     list_host_backend() -> Dict{Symbol, Dict{Symbol, Any}}
 
-Return a dictionary of supported host (CPU) backend configurations.
+Return a dictionary of supported host (CPU) backend configurations for each architecture.
 
-This function provides the hardcoded specifications for supported CPU architectures,
-including their KernelAbstractions backend, supported brands, and functional status
-based on the current system architecture.
-
-# Returns
-
-Dictionary mapping architecture symbols to configuration dictionaries:
-- `:x86_64`: Intel and AMD x86-64 processors
-- `:aarch64`: ARM64 processors (Apple Silicon, ARM servers)
-
-Each configuration contains:
+Each architecture entry (e.g., `:x86_64`, `:aarch64`) contains:
 - `:host`: Device category ("cpu")
 - `:Backend`: KernelAbstractions CPU backend instance
 - `:brand`: Array of supported manufacturer strings
 - `:wrapper`: Array type for computations
-- `:functional`: Boolean indicating if this architecture matches current system
+- `:devices`: Placeholder for device list (usually `nothing`)
+- `:name`: Placeholder for device name (usually `nothing`)
+- `:handle`: Type handle (e.g., `Val{:Host}`)
+- `:functional`: Boolean indicating if this architecture matches the current system
+
+# Returns
+
+Dictionary mapping architecture symbols to configuration dictionaries.
 
 # Examples
 
 ```julia
 backends = list_host_backend()
 x86_config = backends[:x86_64]
-println(x86_config[:brand])  # ["Intel(R)", "AMD"]
-println(x86_config[:functional])  # true (on x86-64 systems)
+println(x86_config[:brand])      # ["Intel(R)", "AMD"]
+println(x86_config[:functional]) # true (on x86-64 systems)
+println(x86_config[:devices])    # nothing
 ```
 """
 function list_host_backend()
@@ -119,27 +117,6 @@ Each registered device receives:
 - `:Backend`: KernelAbstractions `CPU()` backend
 - `:wrapper`: `Array` type for computations
 - `:handle`: `nothing` (CPUs don't require device handles)
-
-# Examples
-
-```julia
-using UnifiedBackend
-
-# Get the global backend
-b = backend()
-
-# Initialize for current architecture (usually automatic)
-add_backend!(b.exec, Val(Sys.ARCH))
-
-# Inspect registered devices
-for (dev_id, config) in b.exec.host
-    println("\$dev_id: \$(config[:name])")
-end
-# Output:
-# dev1: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
-# dev2: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
-# ... (one per logical core)
-```
 
 # Errors
 

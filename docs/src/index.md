@@ -24,7 +24,7 @@ UnifiedBackend provides a consistent interface for managing and executing code a
 using UnifiedBackend
 
 # Access backend
-b = backend()
+b = get_backend()
 
 # Use CPU
 cpu = select_execution_backend(b.exec, "host")
