@@ -88,9 +88,8 @@ end
 
 Initialize and populate the execution platform registry with host (CPU) backend configurations.
 
-This generic implementation works for any CPU architecture by checking which backend
-in `list_host_backend()` is functional for the current system. The architecture-specific
-behavior is determined by the `:functional` flag in each backend configuration.
+This generic implementation works for any CPU architecture: it takes the entry of
+`list_host_backend()` for `ARCH` (its backend, array type and known brands).
 
 To add support for a new architecture, simply add an entry to `list_host_backend()`.
 
@@ -102,8 +101,8 @@ To add support for a new architecture, simply add an entry to `list_host_backend
 # Behavior
 
 1. Queries system CPU information via `Sys.cpu_info()`
-2. Matches detected CPU brand against supported backends
-3. Creates a device entry for each logical CPU core
+2. Matches the CPU model against the architecture's listed brands (`host_brand`)
+3. Creates a device entry for each logical CPU core (at least one)
 4. Updates the `functional` status log
 5. Logs initialization status via `@info`
 
@@ -118,9 +117,11 @@ Each registered device receives:
 - `:wrapper`: `Array` type for computations
 - `:handle`: `nothing` (CPUs don't require device handles)
 
-# Errors
+# Unlisted CPUs
 
-Throws `ErrorException` if CPU model information cannot be retrieved from the system.
+A CPU whose model names no listed brand (Julia under Rosetta, which reports an Apple chip for `:x86_64`; NVIDIA
+Grace; other ARM servers), or whose model is unknown, is still registered, with brand `"unknown"` (`host_brand`);
+an architecture `list_host_backend()` does not list gets the `CPU()` backend and `Array`. There is always a `:dev1`.
 
 # See Also
 
@@ -129,34 +130,37 @@ Throws `ErrorException` if CPU model information cannot be retrieved from the sy
 - [`list_cpu_devices`](@ref): CPU device enumeration
 """
 function add_backend!(bckd::ExecutionPlatforms, ::Val{ARCH}) where ARCH
-    for (k,(platform,backend)) ∈ enumerate(list_host_backend())
-        if backend[:functional]
-            cpu_info = Sys.cpu_info()
-            if !isempty(cpu_info) && !isempty(cpu_info[1].model)
-                for brand ∈ backend[:brand]
-                    if occursin(brand,cpu_info[1].model)
-                        hosts_dict = Dict{Symbol,Host}()
-                        for (k,device) ∈ enumerate(list_cpu_devices())
-                            hosts_dict[Symbol("dev$(k)")] = Host(
-                                category = :cpu,
-                                platform = :CPU,
-                                brand    = brand,
-                                name     = cpu_info[1].model,
-                                Backend  = backend[:Backend],
-                                wrapper  = backend[:wrapper],
-                                handle   = nothing,
-                            )
-                        end
-                        bckd.host = hosts_dict
-                        push!(bckd.functional, "✓ $(brand) $(platform)")
-                        break
-                    end
-                end
-            else
-                throw(ErrorException("Could not retrieve CPU model"))
-            end
-        end
-    end
+    hosts  = list_host_backend()
+    config = get(hosts, ARCH, Dict{Symbol,Any}(:Backend => CPU(), :wrapper => Array, :brand => String[]))
+    info   = Sys.cpu_info()
+    model  = isempty(info) ? "" : strip(info[1].model)
+    brand  = host_brand(model, config[:brand])
+    name   = isempty(model) ? string(ARCH) : String(model)
+    bckd.host = Dict{Symbol,Host}(Symbol("dev$(k)") => Host(
+        category = :cpu,
+        platform = :CPU,
+        brand    = brand,
+        name     = name,
+        Backend  = config[:Backend],
+        wrapper  = config[:wrapper],
+        handle   = nothing,
+    ) for k ∈ 1:max(1, length(info)))
+    push!(bckd.functional, "✓ $(brand) $(ARCH)")
     @info join(bckd.functional, "\n")
     return nothing
+end
+
+"""
+    host_brand(model, brands) -> String
+
+The first of `brands` that the CPU `model` string names, else `"unknown"`.
+
+```julia
+host_brand("Intel(R) Core(TM) i5-1038NG7", ["Intel(R)", "AMD"])  # "Intel(R)"
+host_brand("Apple M2", ["Intel(R)", "AMD"])                     # "unknown" (x86_64 Julia under Rosetta)
+```
+"""
+function host_brand(model::AbstractString, brands)
+    i = findfirst(b -> occursin(b, model), brands)
+    return isnothing(i) ? "unknown" : String(brands[i])
 end

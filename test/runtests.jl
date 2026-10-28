@@ -134,6 +134,23 @@ using KernelAbstractions: CPU
                 @test config.handle === nothing
             end
         end
+
+        @testset "a CPU of no listed brand is still registered" begin
+            hb = UnifiedBackend.host_brand
+            @test hb("Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz", ["Intel(R)", "AMD"]) == "Intel(R)"
+            @test hb("AMD Ryzen 7 9800X3D", ["Intel(R)", "AMD"]) == "AMD"
+            @test hb("Apple M2", ["Intel(R)", "AMD"]) == "unknown"          # x86_64 Julia under Rosetta
+            @test hb("Neoverse-V2", ["Apple", "AMD"]) == "unknown"          # NVIDIA Grace
+            @test hb("", ["Intel(R)", "AMD"]) == "unknown"
+            exec = ExecutionPlatforms()
+            add_backend!(exec, Val(:riscv64))                              # an architecture with no entry
+            @test exec.host[:dev1].Backend isa CPU && exec.host[:dev1].wrapper === Array
+        end
+
+        @testset "devices in numeric order" begin
+            d = Dict(Symbol("dev$k") => k for k ∈ [10, 2, 1, 11, 3])
+            @test UnifiedBackend.device_keys(d) == [:dev1, :dev2, :dev3, :dev10, :dev11]
+        end
     end
     
     @testset "Device Selection" begin
@@ -199,6 +216,7 @@ using KernelAbstractions: CPU
         @testset "device_wakeup!() stub" begin
             # Should throw error when called without backend extension
             @test_throws ErrorException device_wakeup!()
+            @test device_wakeup!(get_host(get_backend().exec).dev1.handle) === nothing   # a host: nothing to wake
         end
         
         @testset "device_free!() CPU" begin

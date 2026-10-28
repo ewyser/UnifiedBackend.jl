@@ -41,6 +41,16 @@ function device_wakeup!()
 end
 
 """
+    device_wakeup!(::Nothing) -> Nothing
+
+A host has no device to activate (its `handle` is `nothing`): nothing to do, so a caller can wake whatever device it
+selected, `device_wakeup!(first(selection).handle)`.
+"""
+function device_wakeup!(::Nothing)
+    return nothing
+end
+
+"""
     device_free!(mesh, ::Val{:CPU}) -> Nothing
 
 Free device memory for CPU backend and trigger garbage collection.

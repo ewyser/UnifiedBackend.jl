@@ -59,15 +59,13 @@ When `prompt=true` or `distributed=true`, displays terminal menus using REPL.Ter
 - [`ExecutionPlatforms`](@ref): Device registry structure
 """
 function get_host(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
-    cpus,devs,names = Dict(),collect(keys(bckd.host)),Vector{String}()
+    devs,names = device_keys(bckd.host),Vector{String}()
     for key ∈ devs
         push!(names, bckd.host[key].name)
     end
     if distributed
-        for dev ∈ request("select device(s):", MultiSelectMenu(names))
-            cpus[devs[dev]] = bckd.host[devs[dev]]
-        end
-        return NamedTuple(cpus)
+        sel = sort(collect(request("select device(s):", MultiSelectMenu(names))))
+        return (; (devs[dev] => bckd.host[devs[dev]] for dev ∈ sel)...)
     elseif prompt
         dev = request("select device:", RadioMenu(names))
         return NamedTuple(Dict(devs[dev] => bckd.host[devs[dev]]))
@@ -153,16 +151,13 @@ for automatic fallback to CPU.
 - [`ExecutionPlatforms`](@ref): Device registry structure
 """
 function get_device(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::Bool=false)
-    devs, names = collect(keys(bckd.device)), Vector{String}()
+    devs, names = device_keys(bckd.device), Vector{String}()
     for key ∈ devs
         push!(names, bckd.device[key].name)
     end
-    gpus = Dict()
     if distributed
-        for dev ∈ request("select device(s):", MultiSelectMenu(names))
-            gpus[devs[dev]] = bckd.device[devs[dev]]
-        end
-        return NamedTuple(gpus)
+        sel = sort(collect(request("select device(s):", MultiSelectMenu(names))))
+        return (; (devs[dev] => bckd.device[devs[dev]] for dev ∈ sel)...)
     elseif prompt
         dev = request("select device:", RadioMenu(names))
         return NamedTuple(Dict(devs[dev] => bckd.device[devs[dev]]))
@@ -172,8 +167,19 @@ function get_device(bckd::ExecutionPlatforms; prompt::Bool=false, distributed::B
 end
 
 """
+    device_keys(devices) -> Vector{Symbol}
+
+The keys of a device registry (`:dev1`, `:dev2`, …) in numeric order: the default device and the menus' order are
+then `:dev1`, `:dev2`, …, `:dev10`, not a `Dict`'s arbitrary order.
+"""
+function device_keys(devices::AbstractDict)
+    number(k) = something(tryparse(Int, replace(string(k), r"^\D+" => "")), typemax(Int))
+    return sort(collect(keys(devices)); by=k -> (number(k), string(k)))
+end
+
+"""
     select_execution_backend(
-        bckd::ExecutionPlatforms, 
+        bckd::ExecutionPlatforms,
         select::String="host"; 
         prompt::Bool=false, 
         distributed::Bool=false
