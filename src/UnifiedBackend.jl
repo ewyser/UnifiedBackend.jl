@@ -79,10 +79,8 @@ module UnifiedBackend
 const SRC = @__DIR__
 
 # Include dependencies
-using Revise, Pkg, Test
-using ProgressMeter, REPL.TerminalMenus
-
-using KernelAbstractions, Adapt, Base.Threads
+using REPL.TerminalMenus
+using KernelAbstractions, Base.Threads
 
 # Include types
 include(joinpath(SRC, "boot/include.jl"))
