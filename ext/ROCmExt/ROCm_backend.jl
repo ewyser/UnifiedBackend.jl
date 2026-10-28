@@ -57,13 +57,14 @@ function device_wakeup!(handle::HIPDevice)
 end
 
 """
-    device_free(mesh::Mesh,::Val{:ROCm})
+    device_free!(mesh, ::Val{:ROCm})
 
 Description:
 ---
-Return Dicts of effective cpu and gpu backend based on hard-coded supported backends. 
+Free the device arrays among `mesh`'s fields, then collect garbage. (`mesh` was typed `::Mesh`, a type UnifiedBackend
+does not have, so this file failed to load and ROCm never registered.)
 """
-function device_free!(mesh::Mesh,::Val{:ROCm})
+function device_free!(mesh,::Val{:ROCm})
     msg = ["freed GPU memory (VRAM):\n"]
     for i in 1:nfields(mesh)
         field = getfield(mesh,i)

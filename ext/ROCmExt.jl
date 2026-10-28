@@ -67,7 +67,6 @@ try
     @info "🧠 ROCm 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "ROCmExt", "ROCm_backend.jl"))
     global rocm_success = true
-    global rocm_functional = AMDGPU.functional()
 catch e
     @warn """
     ⚠️ ROCm extension failed to load.
@@ -87,11 +86,12 @@ catch e
     global rocm_success = false
 end
 
+# whether ROCm works is asked here, when the package loads, not while it precompiles (as in CUDAExt)
 function __init__()
-    if rocm_success && rocm_functional
-        add_backend!(Val(:ROCm), get_backend())
+    if rocm_success && AMDGPU.functional()
+        add_backend!(Val(:ROCm), UnifiedBackend.get_backend())
         return @info "✅ ROCm backend registered successfully"
-    elseif rocm_success && !rocm_functional
+    elseif rocm_success
         @info "🟡 ROCm extension loaded successfully but ROCm is not functional on this system."
         return nothing
     else

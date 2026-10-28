@@ -67,7 +67,6 @@ try
     @info "🧠 CUDA 🔁 overloading stub functions..."
     include(joinpath(@__DIR__, "CUDAExt", "CUDA_backend.jl"))
     global cuda_success = true
-    global cuda_functional = CUDA.functional()
 catch e
     @warn """
     ⚠️ CUDA extension failed to load.
@@ -86,12 +85,14 @@ catch e
     global cuda_success = false
 end
 
+# whether CUDA works is asked here, when the package loads, not while it precompiles: a cache built without a GPU
+# (a login node, a container build) would otherwise never register one
 function __init__()
-    if cuda_success && cuda_functional
+    if cuda_success && CUDA.functional()
         @info "✅ CUDA extension loaded successfully. Registering CUDA backend..."
-        add_backend!(Val(:CUDA), get_backend())
+        add_backend!(Val(:CUDA), UnifiedBackend.get_backend())
         return nothing
-    elseif cuda_success && !cuda_functional
+    elseif cuda_success
         @info "🟡 CUDA extension loaded successfully but CUDA is not functional on this system."
         return nothing
     else
