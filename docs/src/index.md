@@ -4,35 +4,27 @@ CurrentModule = UnifiedBackend
 
 # UnifiedBackend.jl
 
-A unified backend abstraction layer for CPU and GPU execution in Julia.
-
-## Overview
-
-UnifiedBackend provides a consistent interface for managing and executing code across different computational backends (CPU, CUDA, ROCm) with automatic device detection and runtime configuration.
-
-## Features
-
-- **Automatic CPU detection**: Supports x86_64 and aarch64 (Apple Silicon)
-- **GPU support**: NVIDIA CUDA and AMD ROCm via package extensions  
-- **Interactive selection**: Choose devices via terminal menus
-- **Multi-device**: Run on multiple CPUs or GPUs
-- **Type-stable**: Uses KernelAbstractions.jl
-
-## Quick Start
+Where KernelAbstractions kernels can run on this machine: the host (the CPU, registered when the package loads) and
+the GPUs that CUDA.jl or AMDGPU.jl registers when loaded (see [Extensions](extensions.md)). Each `Platform` carries
+the backend that runs kernels there and the array type that holds data there.
 
 ```julia
-using UnifiedBackend
+using UnifiedBackend, KernelAbstractions
+using CUDA                       # optional: registers NVIDIA GPUs (AMDGPU for AMD ones)
 
-# Access backend
-b = get_backend()
+@kernel function double!(a)
+    i = @index(Global)
+    a[i] *= 2
+end
 
-# Use CPU
-cpu = select_execution_backend(b.exec, "host")
-data = cpu.dev1[:wrapper](rand(1000, 1000))
+p = select_platform("device")   # the first GPU, or the host when there is none (it says so)
+activate!(p)                    # make it the current device; nothing to do for a host
+p.backend                       # the KernelAbstractions backend: CUDABackend(), ROCBackend() or CPU()
+p.arraytype                     # the array type for its data: CuArray, ROCArray or Array
 
-# Use GPU (with CUDA.jl loaded)
-gpu = select_execution_backend(b.exec, "device")
-data = gpu.dev1[:wrapper](rand(1000, 1000))
+a = p.arraytype(rand(1000))     # data on the platform
+double!(p.backend)(a; ndrange=length(a))
+KernelAbstractions.synchronize(p.backend)
 ```
 
-See the [API Reference](api.md) and [Extensions](extensions.md) for more details.
+See the [API Reference](api.md).

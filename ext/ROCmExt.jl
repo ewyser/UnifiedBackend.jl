@@ -1,102 +1,27 @@
 """
     ROCmExt
 
-Package extension providing AMD ROCm GPU support for UnifiedBackend.
-
-This extension is automatically loaded when both UnifiedBackend and AMDGPU are available
-in the Julia session. It registers ROCm-capable AMD GPUs in the execution platform registry
-and enables GPU computation via KernelAbstractions.ROCBackend().
-
-# Requirements
-
-- Julia 1.9+ (for package extensions)
-- AMDGPU.jl package installed
-- AMD GPU with ROCm support
-- ROCm runtime installation
-
-# Installation
-
-```julia
-using Pkg
-Pkg.add("AMDGPU")
-```
-
-# Usage
-
-```julia
-using UnifiedBackend
-using AMDGPU  # Triggers automatic loading of ROCmExt
-
-b = get_backend()
-
-# Check if ROCm devices were registered
-if !isempty(b.exec.device)
-    println("ROCm GPUs available: ", length(b.exec.device))
-    
-    # Select GPU
-    gpu = select_execution_backend(b.exec, "device")
-    
-    # Access ROCm-specific properties
-    println(gpu[:dev1].name)      # "AMD Radeon RX 6900 XT"
-    println(gpu[:dev1].Backend)   # ROCBackend()
-    println(gpu[:dev1].wrapper)   # ROCArray
-    println(gpu[:dev1].handle)    # HIPDevice(0)
-end
-```
-
-# Registered Functions
-
-- `add_backend!(::Val{:ROCm}, ::Backend)`: Detects and registers ROCm GPUs
-- `device_wakeup!(::HIPDevice)`: Activates a specific ROCm device
-
-# See Also
-
-- `AMDGPU.jl`: AMD ROCm support for Julia
-- `KernelAbstractions.ROCBackend`: Backend for GPU kernel execution
+AMD GPUs for UnifiedBackend, loaded with AMDGPU.jl: when ROCm works on this machine (asked when the package loads,
+not when it precompiles), each GPU is registered as a device with `ROCBackend()` and `ROCArray`, and `activate!` makes one
+the current device.
 """
 module ROCmExt
 
-@info "📦 Including extension module"
-
-using UnifiedBackend
-import UnifiedBackend: add_backend!, device_wakeup!, device_free!
-
-try
-    @info "🔧 Using ROCm backend"
-    using AMDGPU
-    @info "🧠 ROCm 🔁 overloading stub functions..."
-    include(joinpath(@__DIR__, "ROCmExt", "ROCm_backend.jl"))
-    global rocm_success = true
-    global rocm_functional = AMDGPU.functional()
-catch e
-    @warn """
-    ⚠️ ROCm extension failed to load.
-    
-    To enable ROCm support:
-      1. Install AMDGPU.jl in your base environment:
-        using Pkg
-        Pkg.activate()  # Activate your base environment
-        Pkg.add(\"AMDGPU\")
-      2. Ensure ROCm runtime is installed on your system
-      3. Restart Julia, and:
-        using UnifiedBackend
-        using AMDGPU  # Triggers automatic loading of ROCmExt
-
-    Error: $e
-    """
-    global rocm_success = false
-end
+using AMDGPU
+import UnifiedBackend
 
 function __init__()
-    if rocm_success && rocm_functional
-        add_backend!(Val(:ROCm), get_backend())
-        return @info "✅ ROCm backend registered successfully"
-    elseif rocm_success && !rocm_functional
-        @info "🟡 ROCm extension loaded successfully but ROCm is not functional on this system."
-        return nothing
+    if AMDGPU.functional()
+        UnifiedBackend.register_gpus!(:ROCm, "AMD", ROCBackend(), ROCArray, collect(AMDGPU.devices()), AMDGPU.HIP.name)
     else
-        return @info "❌ ROCm backend registration failed"
+        @info "AMDGPU.jl is loaded, but ROCm does not work on this machine: no AMD GPU registered"
     end
+    return nothing
+end
+
+function UnifiedBackend.activate!(handle::HIPDevice)
+    AMDGPU.device!(handle)
+    return nothing
 end
 
 end

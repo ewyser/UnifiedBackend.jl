@@ -5,39 +5,28 @@ CurrentModule = UnifiedBackend
 CollapsedDocStrings = true
 ```
 
-## Public API
-
-### Backend Access
+## Platforms
 
 ```@docs
-get_backend
-Host
-Device
-Backend
-ExecutionPlatforms
+Platform
+host_platforms
+device_platforms
+register!
 ```
 
-### Device Selection
+## Selecting and activating
 
 ```@docs
-select_execution_backend
-get_host
-get_device
+select_platform
+activate!
 ```
 
-### Backend Setup
+## For extensions and tests
 
 ```@docs
-add_backend!
-list_host_backend
-list_cpu_devices
-```
-
-### Device Management
-
-```@docs
-device_wakeup!
-device_free!
+UnifiedBackend.register_gpus!
+UnifiedBackend.host_platform
+UnifiedBackend.host_brand
 ```
 
 ## Index
