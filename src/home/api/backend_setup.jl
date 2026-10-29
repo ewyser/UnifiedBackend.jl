@@ -146,7 +146,7 @@ function add_backend!(bckd::ExecutionPlatforms, ::Val{ARCH}) where ARCH
         handle   = nothing,
     ) for k ∈ 1:max(1, length(info)))
     push!(bckd.functional, "✓ $(brand) $(ARCH)")
-    @info join(bckd.functional, "\n")
+    @debug join(bckd.functional, "\n")
     return nothing
 end
 

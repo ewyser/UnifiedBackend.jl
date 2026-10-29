@@ -75,29 +75,20 @@ using AMDGPU
 """
 module UnifiedBackend
 
-# Define module location as const
-const SRC = @__DIR__
-
-# Include dependencies
 using REPL.TerminalMenus
-using KernelAbstractions, Base.Threads
+using KernelAbstractions
 
-# Include types
-include(joinpath(SRC, "boot/include.jl"))
-sucess = superInc(["boot/needs/types"]; root=SRC)
-
-# Include API modules at precompile time
-success = superInc(["home/api"]; root=SRC)
+include("boot/needs/types/concrete/types.jl")
+include("home/api/backend_setup.jl")
+include("home/api/device_selection.jl")
+include("home/api/device_management.jl")
 
 # Define global backend
 const bckd = Backend(lib=Dict(), exec=ExecutionPlatforms())
 
 function __init__()
     # Initialize execution backend based on system architecture
-    invokelatest(add_backend!, bckd.exec, Val(Sys.ARCH))
-    
-    # Welcome log
-    # welcome_log() 
+    add_backend!(bckd.exec, Val(Sys.ARCH))
 end
 
 """

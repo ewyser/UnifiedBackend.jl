@@ -293,7 +293,7 @@ Logs selection via `@info`:
 function select_execution_backend(bckd::ExecutionPlatforms, select::String="host"; prompt::Bool=false, distributed::Bool=false)
     mode = distributed ? "distributed" : (prompt ? "interactive" : "default")
     if select == "host"
-        @info "Using CPU backend ($mode mode)"
+        @debug "Using CPU backend ($mode mode)"
         return get_host(bckd; prompt=prompt, distributed=distributed)
     elseif select == "device"
         if isempty(bckd.device)
