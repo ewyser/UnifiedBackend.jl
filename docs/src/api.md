@@ -10,6 +10,7 @@ CollapsedDocStrings = true
 ```@docs
 Platform
 host_platforms
+device_platforms
 register!
 ```
 

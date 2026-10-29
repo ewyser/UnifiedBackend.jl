@@ -33,13 +33,18 @@ const DEVICES = Platform[]
 
 """
     host_platforms() -> Vector{Platform}
-    device_platforms() -> Vector{Platform}
 
-The registered hosts (the CPU) and devices (GPUs), in registration order.
+The registered hosts: the CPU, registered when the package loads.
 """
 function host_platforms()
     return HOSTS
 end
+"""
+    device_platforms() -> Vector{Platform}
+
+The registered devices (GPUs), in registration order: none unless a GPU package's extension (CUDA.jl, AMDGPU.jl)
+found a working GPU, or a platform was added with `register!`.
+"""
 function device_platforms()
     return DEVICES
 end

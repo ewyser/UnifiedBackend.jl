@@ -7,8 +7,13 @@ Where [KernelAbstractions](https://github.com/JuliaGPU/KernelAbstractions.jl) ke
 kernels there and the array type that holds data there.
 
 ```julia
-using UnifiedBackend
+using UnifiedBackend, KernelAbstractions
 using CUDA                       # optional: registers NVIDIA GPUs (AMDGPU for AMD ones)
+
+@kernel function double!(a)
+    i = @index(Global)
+    a[i] *= 2
+end
 
 p = select_platform("device")   # the first GPU, or the host when there is none (it says so)
 activate!(p)                    # make it the current device; nothing to do for a host
@@ -16,7 +21,8 @@ p.backend                       # the KernelAbstractions backend: CUDABackend(),
 p.arraytype                     # the array type for its data: CuArray, ROCArray or Array
 
 a = p.arraytype(rand(1000))     # data on the platform
-kernel!(p.backend)(a; ndrange=length(a))
+double!(p.backend)(a; ndrange=length(a))
+KernelAbstractions.synchronize(p.backend)
 ```
 
 - `select_platform("host")` (the default) or `select_platform("device")`: one `Platform`.
