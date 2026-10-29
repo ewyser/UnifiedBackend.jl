@@ -1,283 +1,60 @@
 using UnifiedBackend
 using Test
-using KernelAbstractions: CPU
+using KernelAbstractions
+
+@kernel function twice!(a)
+    i = @index(Global)
+    a[i] = 2 * a[i]
+end
 
 @testset "UnifiedBackend.jl" begin
-    
-    @testset "Type Construction" begin
-        @testset "ExecutionPlatforms" begin
-            # Test default constructor
-            exec = ExecutionPlatforms()
-            @test exec isa ExecutionPlatforms
-            @test exec.functional == ["Available execution platform(s):"]
-            @test isempty(exec.host)
-            @test isempty(exec.device)
-            
-            # Test keyword constructor
-            exec2 = ExecutionPlatforms(
-                functional = ["test"],
-                host = Dict(:dev1 => Host(name = "TestCPU")),
-                device = Dict()
-            )
-            @test exec2.functional == ["test"]
-            @test length(exec2.host) == 1
-            @test exec2.host[:dev1].name == "TestCPU"
-        end
-        
-        @testset "Backend" begin
-            # Test default constructor
-            exec = ExecutionPlatforms()
-            bckd = UnifiedBackend.Backend(lib=Dict(), exec=exec)
-            @test bckd isa UnifiedBackend.Backend
-            @test isempty(bckd.lib)
-            @test bckd.exec === exec
-            
-            # Test mutability: Backend contains mutable fields (Dict, ExecutionPlatforms)
-            # so Julia considers it mutable even though defined with `struct`
-            @test ismutable(UnifiedBackend.Backend)
-            @test ismutable(ExecutionPlatforms)
-            
-            # Test that we cannot reassign fields (struct semantics)
-            @test_throws ErrorException bckd.lib = Dict()
-        end
+    @testset "Platform" begin
+        p = Platform(:device, :Fake, "Brand", "a GPU", CPU(), Array, 7)
+        @test (p.kind, p.platform, p.brand, p.name, p.backend, p.arraytype, p.handle) == (:device, :Fake, "Brand", "a GPU", CPU(), Array, 7)
+        @test Platform(; platform=:Fake, backend=CPU(), arraytype=Array).name == "Fake"          # keywords, defaults
+        @test !ismutable(p)
+        @test_throws ArgumentError Platform(:gpu, :Fake, "", "", CPU(), Array, nothing)          # :host or :device
     end
-    
-    @testset "Global Backend Access" begin
-                @testset "backend() function" begin
-                        b = get_backend()
-                        @test b isa UnifiedBackend.Backend
-                        @test b.exec isa ExecutionPlatforms
-                        # Test singleton behavior - same instance every time
-                        b2 = get_backend()
-                        @test b === b2
-                end
-        
-        @testset "Initial state" begin
-            b = get_backend()
-            
-            # Should have initialized execution platforms
-            @test !isempty(b.exec.functional)
-            @test "Available execution platform(s):" ∈ b.exec.functional
-            
-            # Should have CPU backend registered
-            @test !isempty(b.exec.host)
-            
-            # GPU may or may not be available
-            # Don't test device dict as it depends on system
-        end
-    end
-    
-    @testset "Backend Setup" begin
-            @testset "list_host_backend()" begin
-            backends = UnifiedBackend.list_host_backend()
-            @test backends isa Dict{Symbol, Dict{Symbol, Any}}
-            @test haskey(backends, :x86_64)
-            @test haskey(backends, :aarch64)
-            # Check x86_64 configuration
-            x86 = backends[:x86_64]
-            @test x86[:host] == "cpu"
-            @test x86[:Backend] isa CPU
-            @test x86[:wrapper] === Array
-            @test "Intel(R)" ∈ x86[:brand] || "AMD" ∈ x86[:brand]
-            # Check aarch64 configuration
-            arm = backends[:aarch64]
-            @test arm[:host] == "cpu"
-            @test arm[:Backend] isa CPU
-            @test "Apple" ∈ arm[:brand] || "AMD" ∈ arm[:brand]
-            # One should be functional based on current architecture
-            @test x86[:functional] || arm[:functional]
-        end
-        
-        @testset "list_cpu_devices()" begin
-            devices = UnifiedBackend.list_cpu_devices()
-            
-            @test devices isa Vector{String}
-            @test !isempty(devices)
-            
-            # Should have at least one CPU
-            @test length(devices) >= 1
-            
-            # Each entry should be a non-empty string
-            for dev in devices
-                @test dev isa String
-                @test !isempty(dev)
-            end
-        end
-        
-        @testset "add_backend!()" begin
-            # Create a fresh ExecutionPlatforms
-            exec = ExecutionPlatforms()
-            
-            # Add backend based on current architecture
-            if Sys.ARCH == :x86_64
-                add_backend!(exec, Val(:x86_64))
-            elseif Sys.ARCH == :aarch64
-                add_backend!(exec, Val(:aarch64))
-            end
-            
-            # Should have populated host devices
-            @test !isempty(exec.host)
-            
-            # Should have functional message
-            @test length(exec.functional) > 1
-            
-            # Check device structure
-            for (dev_id, config) in exec.host
-                @test dev_id isa Symbol
-                @test config isa Host
-                @test config.category == :cpu
-                @test config.platform == :CPU
-                @test !isempty(config.brand)
-                @test !isempty(config.name)
-                @test config.Backend isa CPU
-                @test config.wrapper === Array
-                @test config.handle === nothing
-            end
-        end
 
-        @testset "a CPU of no listed brand is still registered" begin
-            hb = UnifiedBackend.host_brand
-            @test hb("Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz", ["Intel(R)", "AMD"]) == "Intel(R)"
-            @test hb("AMD Ryzen 7 9800X3D", ["Intel(R)", "AMD"]) == "AMD"
-            @test hb("Apple M2", ["Intel(R)", "AMD"]) == "unknown"          # x86_64 Julia under Rosetta
-            @test hb("Neoverse-V2", ["Apple", "AMD"]) == "unknown"          # NVIDIA Grace
-            @test hb("", ["Intel(R)", "AMD"]) == "unknown"
-            exec = ExecutionPlatforms()
-            add_backend!(exec, Val(:riscv64))                              # an architecture with no entry
-            @test exec.host[:dev1].Backend isa CPU && exec.host[:dev1].wrapper === Array
-        end
+    @testset "the host is registered when the package loads" begin
+        @test length(host_platforms()) == 1
+        h = only(host_platforms())
+        @test h.kind == :host && h.platform == :CPU && h.backend isa CPU && h.arraytype === Array && h.handle === nothing
+        @test !isempty(h.name) && !isempty(h.brand)
+    end
 
-        @testset "register_gpus! (what the CUDA and ROCm extensions call)" begin
-            b = UnifiedBackend.Backend(lib=Dict(), exec=ExecutionPlatforms())
-            UnifiedBackend.register_gpus!(b, :Fake, "Brand", CPU(), Array, [7, 8], h -> "gpu $h")
-            UnifiedBackend.register_gpus!(b, :Fake, "Brand", CPU(), Array, [9], h -> "gpu $h")
-            @test UnifiedBackend.device_keys(b.exec.device) == [:dev1, :dev2, :dev3]                # numbered after the others
-            @test [b.exec.device[k].handle for k ∈ (:dev1, :dev2, :dev3)] == [7, 8, 9]
-            @test b.exec.device[:dev2].name == "gpu 8" && b.exec.device[:dev2].platform == :Fake
-        end
+    @testset "any CPU is a host" begin
+        hb = UnifiedBackend.host_brand
+        @test hb("Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz", ["Intel(R)", "AMD"]) == "Intel(R)"
+        @test hb("AMD Ryzen 7 9800X3D", ["Intel(R)", "AMD"]) == "AMD"
+        @test hb("Apple M2", ["Intel(R)", "AMD"]) == "unknown"          # x86_64 Julia under Rosetta
+        @test hb("Neoverse-V2", ["Apple", "AMD"]) == "unknown"          # NVIDIA Grace
+        @test hb("", ["Intel(R)", "AMD"]) == "unknown"
+        h = UnifiedBackend.host_platform(:riscv64, "")                 # an architecture with no brands, no model
+        @test h.name == "riscv64" && h.brand == "unknown" && h.backend isa CPU && h.arraytype === Array
+    end
 
-        @testset "devices in numeric order" begin
-            d = Dict(Symbol("dev$k") => k for k ∈ [10, 2, 1, 11, 3])
-            @test UnifiedBackend.device_keys(d) == [:dev1, :dev2, :dev3, :dev10, :dev11]
+    @testset "selecting" begin
+        @test select_platform() === first(host_platforms()) === select_platform("host")
+        @test isempty(device_platforms())
+        @test (@test_logs (:info, r"No GPU registered") select_platform("device")) === first(host_platforms())   # falls back, says so
+        @test_throws ArgumentError select_platform("gpu")
+        try
+            UnifiedBackend.register_gpus!(:Fake, "Brand", CPU(), Array, [7, 8], h -> "gpu $h")       # what an extension does
+            register!(Platform(; platform=:Other, backend=CPU(), arraytype=Array, handle=9))
+            @test [d.handle for d ∈ device_platforms()] == [7, 8, 9]                                         # registration order
+            @test device_platforms()[2].name == "gpu 8" && device_platforms()[2].kind == :device
+            @test select_platform("device") === first(device_platforms())
+        finally
+            empty!(device_platforms())
         end
     end
-    
-    @testset "Device Selection" begin
-        b = get_backend()
-        
-        @testset "get_host()" begin
-            # Default mode - should return first device
-            cpu = get_host(b.exec)
-            @test cpu isa NamedTuple
-            @test haskey(cpu, :dev1)
-            @test cpu.dev1 isa Host
-            @test cpu.dev1.platform == :CPU
-            # Test that device configuration is complete
-            @test !isempty(cpu.dev1.name)
-            @test cpu.dev1.Backend isa CPU
-            @test cpu.dev1.wrapper === Array
-        end
-        
-        @testset "get_device() - no GPU" begin
-            # Only test if no GPU is available
-            if isempty(b.exec.device)
-                @test_throws Exception get_device(b.exec)
-            end
-        end
-        
-        @testset "select_execution_backend()" begin
-            # Host selection (default mode)
-            @testset "Host selection" begin
-                cpu = select_execution_backend(b.exec, "host")
-                @test cpu isa NamedTuple
-                @test haskey(cpu, :dev1)
-                @test cpu.dev1 isa Host
-                @test cpu.dev1.platform == :CPU
-            end
-            
-            # Device selection with fallback
-            @testset "Device selection with fallback" begin
-                result = select_execution_backend(b.exec, "device")
-                @test result isa NamedTuple
-                
-                # Should either be GPU or fallback to CPU
-                if !isempty(b.exec.device)
-                    # Has GPU
-                    @test length(result) >= 1
-                else
-                    # Fell back to CPU
-                    @test haskey(result, :dev1)
-                    @test result.dev1 isa Host
-                    @test result.dev1.platform == :CPU
-                end
-            end
-            
-            # Invalid selection string
-            @testset "Error handling" begin
-                @test_throws ArgumentError select_execution_backend(b.exec, "invalid")
-                @test_throws ArgumentError select_execution_backend(b.exec, "")
-                @test_throws ArgumentError select_execution_backend(b.exec, "gpu")
-            end
-        end
+
+    @testset "activating, and running a kernel there" begin
+        h = select_platform()
+        @test activate!(h) === h                                                                   # nothing to do for a host
+        a = h.arraytype([1.0, 2.0, 3.0])
+        twice!(h.backend)(a; ndrange=length(a)); KernelAbstractions.synchronize(h.backend)
+        @test a == [2.0, 4.0, 6.0]
     end
-    
-    @testset "Device Management" begin
-        @testset "device_wakeup!() stub" begin
-            # Should throw error when called without backend extension
-            @test_throws ErrorException device_wakeup!()
-            @test device_wakeup!(get_host(get_backend().exec).dev1.handle) === nothing   # a host: nothing to wake
-        end
-        
-        @testset "device_free!() CPU" begin
-            # Should not throw error
-            @test device_free!(nothing, Val(:CPU)) === nothing
-            # Test with actual data
-            data = rand(100)
-            @test device_free!(data, Val(:CPU)) === nothing
-        end
-    end
-    
-    @testset "Integration Tests" begin
-        @testset "End-to-end workflow" begin
-            # Get backend
-            b = get_backend()
-            @test b isa UnifiedBackend.Backend
-            
-            # Select CPU
-            cpu = select_execution_backend(b.exec, "host")
-            @test cpu isa NamedTuple
-            # Get backend instance
-            backend_instance = cpu.dev1.Backend
-            @test backend_instance isa CPU
-            # Get array type
-            array_type = cpu.dev1.wrapper
-            @test array_type === Array
-            # Create array
-            data = array_type(rand(10, 10))
-            @test data isa Array
-            @test size(data) == (10, 10)
-            # Clean up
-            device_free!(data, Val(:CPU))
-        end
-        
-        @testset "Multiple backend accesses" begin
-            # Should maintain consistency
-            b1 = get_backend()
-            cpu1 = select_execution_backend(b1.exec, "host")
-            b2 = get_backend()
-            cpu2 = select_execution_backend(b2.exec, "host")
-            @test b1 === b2
-            @test cpu1.dev1.name == cpu2.dev1.name
-        end
-    end
-    
-    @testset "Type Stability" begin
-        b = get_backend()
-        
-        @testset "Return type stability" begin
-            @test @inferred get_backend() isa UnifiedBackend.Backend
-            @test @inferred get_host(b.exec) isa NamedTuple
-        end
-    end
-    
 end

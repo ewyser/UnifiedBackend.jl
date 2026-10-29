@@ -1,11 +1,10 @@
 name = "UnifiedBackend"
 uuid = "53203a36-6468-4ce1-9d2a-5f04ad17d58e"
 authors = ["madmax"]
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
-REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [weakdeps]
 AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
