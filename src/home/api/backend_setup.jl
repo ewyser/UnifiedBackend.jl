@@ -164,3 +164,21 @@ function host_brand(model::AbstractString, brands)
     i = findfirst(b -> occursin(b, model), brands)
     return isnothing(i) ? "unknown" : String(brands[i])
 end
+
+"""
+    register_gpus!(bckd::Backend, platform, brand, backend, wrapper, handles, name) -> Nothing
+
+Register one `Device` per native device handle (`name(handle)` its name), numbered after the devices already
+registered (`:devN`), and note the platform as available: what a GPU package's extension calls when it loads and the
+GPU works (`CUDAExt`, `ROCmExt`).
+"""
+function register_gpus!(bckd::Backend, platform::Symbol, brand::AbstractString, backend, wrapper, handles, name)
+    n = length(bckd.exec.device)
+    for (k, h) ∈ enumerate(handles)
+        bckd.exec.device[Symbol("dev$(n + k)")] = Device(category=:gpu, platform=platform, brand=String(brand),
+                                                          name=String(name(h)), Backend=backend, wrapper=wrapper, handle=h)
+    end
+    push!(bckd.exec.functional, "✓ $(brand) $(platform)")
+    @debug join(bckd.exec.functional, "\n")
+    return nothing
+end

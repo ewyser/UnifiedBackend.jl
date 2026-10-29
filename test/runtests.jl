@@ -147,6 +147,15 @@ using KernelAbstractions: CPU
             @test exec.host[:dev1].Backend isa CPU && exec.host[:dev1].wrapper === Array
         end
 
+        @testset "register_gpus! (what the CUDA and ROCm extensions call)" begin
+            b = UnifiedBackend.Backend(lib=Dict(), exec=ExecutionPlatforms())
+            UnifiedBackend.register_gpus!(b, :Fake, "Brand", CPU(), Array, [7, 8], h -> "gpu $h")
+            UnifiedBackend.register_gpus!(b, :Fake, "Brand", CPU(), Array, [9], h -> "gpu $h")
+            @test UnifiedBackend.device_keys(b.exec.device) == [:dev1, :dev2, :dev3]                # numbered after the others
+            @test [b.exec.device[k].handle for k ∈ (:dev1, :dev2, :dev3)] == [7, 8, 9]
+            @test b.exec.device[:dev2].name == "gpu 8" && b.exec.device[:dev2].platform == :Fake
+        end
+
         @testset "devices in numeric order" begin
             d = Dict(Symbol("dev$k") => k for k ∈ [10, 2, 1, 11, 3])
             @test UnifiedBackend.device_keys(d) == [:dev1, :dev2, :dev3, :dev10, :dev11]
